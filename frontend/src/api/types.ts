@@ -23,7 +23,7 @@ export type LevelKey = "draft" | "working" | "ready" | "priority";
 export type TaskStatus = "clarifying" | "review" | "published";
 export type FieldStatus = "empty" | "suggested" | "confirmed";
 export type ProposalStatus = "submitted" | "selected" | "rejected";
-export type ProviderName = "openai" | "nvidia" | "brev" | "stub";
+export type ProviderName = "openai" | "brev" | "stub";
 
 export interface Evidence {
   source: string;

@@ -131,7 +131,6 @@ function Shell() {
   );
   const providerLabels = {
     openai: "OpenAI",
-    nvidia: "NVIDIA",
     brev: "Brev",
     stub: "Офлайн",
   };
