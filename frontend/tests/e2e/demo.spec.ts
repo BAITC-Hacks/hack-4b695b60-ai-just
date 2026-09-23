@@ -38,13 +38,18 @@ test("Полный сценарий: черновик → публикация �
     .click();
   await expect(page.locator(".score-ring strong")).toHaveText("72");
   const edit = async (key: string, value: string) => {
-    await page.locator(`#field-${key}`).fill(value);
-    await page
-      .locator(".field-card")
-      .filter({ has: page.locator(`#field-${key}`) })
+    const section = page.locator(`#field-section-${key}`);
+    const input = section.locator(`#field-${key}`);
+    if (!(await input.isVisible())) {
+      await section.locator(".field-heading").click();
+    }
+    await input.fill(value);
+    await section
       .getByRole("button", { name: "Сохранить", exact: true })
       .click();
-    await expect(page.locator(`#field-${key}`)).toBeEnabled();
+    await expect(
+      section.getByText("Подтверждено", { exact: true }),
+    ).toBeVisible();
   };
   await edit("title", "Telegram-бот для ответов о статусе доставки");
   await edit(
@@ -123,7 +128,7 @@ test("Полный сценарий: черновик → публикация �
   await expect(
     page.getByRole("heading", { name: "AI Inspector" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Промпты и схемы" }).click();
+  await page.getByRole("tab", { name: "Промпты и схемы" }).click();
   await expect(
     page.getByText("Демонстрационная заглушка frontend", { exact: false }),
   ).toBeVisible();

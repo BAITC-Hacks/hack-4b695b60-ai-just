@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const API = "http://127.0.0.1:8000/api";
+const API = process.env.E2E_API_URL || "http://127.0.0.1:8000/api";
 const answers = {
   data: "Есть выгрузка обращений из CRM за 6 месяцев — около 12 000 записей в Excel, плюс FAQ на 40 вопросов. Данные обезличим и дадим доступ после NDA.",
   context:
@@ -53,22 +53,33 @@ test("Настоящий API: черновик → публикация → от
   }).toPass();
 
   const edit = async (key: string, value: string) => {
-    await page.locator(`#field-${key}`).fill(value);
-    await page
-      .locator(".field-card")
-      .filter({ has: page.locator(`#field-${key}`) })
+    const section = page.locator(`#field-section-${key}`);
+    const input = section.locator(`#field-${key}`);
+    if (!(await input.isVisible())) {
+      await section.locator(".field-heading").click();
+    }
+    await input.fill(value);
+    await section
       .getByRole("button", { name: "Сохранить", exact: true })
       .click();
-    await expect(page.locator(`#field-${key}`)).toBeEnabled();
+    await expect(
+      section.getByText("Подтверждено", { exact: true }),
+    ).toBeVisible();
   };
   await edit("title", "Telegram-бот для ответов о статусе доставки");
   await edit(
     "need",
     "Уменьшить количество звонков клиентов в колл-центр по вопросам доставки и срокам заказов",
   );
-  await edit("constraints", "Пилот за 6 недель, Telegram, интеграция через REST API");
+  await edit(
+    "constraints",
+    "Пилот за 6 недель, Telegram, интеграция через REST API",
+  );
   await edit("contact", contact);
-  await edit("interaction_format", "Созвон раз в неделю, вопросы в Telegram-чате");
+  await edit(
+    "interaction_format",
+    "Созвон раз в неделю, вопросы в Telegram-чате",
+  );
   await edit("users", "Клиенты, ожидающие доставку, и операторы колл-центра");
   await expect(score(page)).toHaveText("100");
 
@@ -94,10 +105,14 @@ test("Настоящий API: черновик → публикация → от
     .click();
   await page
     .getByLabel("Идея · от 20 символов")
-    .fill("Telegram-бот на базе LLM с поиском по FAQ и статусом заказа из CRM через REST API.");
+    .fill(
+      "Telegram-бот на базе LLM с поиском по FAQ и статусом заказа из CRM через REST API.",
+    );
   await page
     .getByLabel("План · от 20 символов")
-    .fill("Разбор обращений и FAQ. Прототип бота. Интеграция статуса доставки. Пилот на 10% клиентов.");
+    .fill(
+      "Разбор обращений и FAQ. Прототип бота. Интеграция статуса доставки. Пилот на 10% клиентов.",
+    );
   await page.getByLabel("Срок", { exact: true }).fill("6 недель");
   await page.getByRole("button", { name: "Отправить отклик" }).click();
   await expect(
@@ -123,9 +138,16 @@ test("Настоящий API: черновик → публикация → от
 
   await page.goto(`/builder/${taskId}`);
   await page.getByRole("button", { name: "Как это работает" }).click();
-  await expect(page.getByRole("heading", { name: "AI Inspector" })).toBeVisible();
-  await page.getByRole("button", { name: "Промпты и схемы" }).click();
-  await expect(page.getByText("analyze_draft", { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "AI Inspector" }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "Промпты и схемы" }).click();
+  await expect(
+    page
+      .getByRole("tabpanel", { name: "Промпты и схемы" })
+      .getByText("analyze_draft", { exact: false })
+      .first(),
+  ).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -136,7 +158,9 @@ test("Настоящий API: каталог, фильтры, пустое со�
   await expect(page.locator(".task-tile")).toHaveCount(1);
   await page.getByRole("button", { name: "Все уровни" }).click();
   await page.getByLabel("Поиск задач").fill("несуществующая задача");
-  await expect(page.getByRole("heading", { name: "Задачи не найдены" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Задачи не найдены" }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Сбросить фильтры" }).click();
   await expect(page.locator(".task-tile")).toHaveCount(6);
 });

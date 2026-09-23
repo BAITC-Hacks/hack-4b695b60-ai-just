@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Check,
   CheckCheck,
+  ChevronDown,
   CircleHelp,
   FileText,
   Send,
@@ -17,13 +18,20 @@ import { toast } from "sonner";
 import { api, USE_MOCKS } from "@/api/client";
 import type { CardField, FieldKey, TaskDetail } from "@/api/types";
 import { useSession } from "@/lib/session";
+import { pluralize } from "@/lib/text";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { ErrorState, Loading, PageHeading } from "@/components/shared";
+import {
+  ErrorState,
+  LevelBadge,
+  Loading,
+  PageHeading,
+} from "@/components/shared";
 import { RatingPanel } from "@/components/RatingPanel";
 import { Inspector } from "./Inspector";
 const example =
   "Хотим чат-бота для клиентов, чтобы меньше звонили в колл-центр.";
+type FieldFeedback = "success" | "rejected";
 export function Builder() {
   const { id } = useParams();
   const { role, businessId } = useSession();
@@ -56,23 +64,75 @@ export function Builder() {
   return <Editor key={id} task={query.data} />;
 }
 function Steps({ step }: { step: number }) {
+  const steps = [
+    ["Черновик", "Опишите идею"],
+    ["Уточнение", "Ответьте AI"],
+    ["Карточка", "Проверьте факты"],
+    ["Публикация", "Откройте командам"],
+  ];
   return (
-    <ol className="steps">
-      {["Черновик", "Уточнение", "Карточка", "Публикация"].map((label, i) => (
+    <ol className="steps" aria-label="Этапы создания задачи">
+      {steps.map(([label, hint], i) => (
         <li
           className={i === step ? "current" : i < step ? "complete" : ""}
           key={label}
+          aria-current={i === step ? "step" : undefined}
         >
           <span>{i < step ? <Check size={15} /> : `0${i + 1}`}</span>
-          {label}
+          <div>
+            <b>{label}</b>
+            <small>{hint}</small>
+          </div>
         </li>
       ))}
     </ol>
   );
 }
+function AnalyzeProgress() {
+  const stages = ["Читаем черновик", "Ищем пробелы", "Готовим вопросы"];
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const timers = [
+      window.setTimeout(() => setStage(1), 3000),
+      window.setTimeout(() => setStage(2), 6000),
+    ];
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+  return (
+    <div
+      className="loading ai-analysis-progress"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-stage={stage + 1}
+    >
+      <Sparkles className="spin" size={23} aria-hidden="true" />
+      <p>
+        <strong>{stages[stage]}</strong>
+      </p>
+      <div className="row ai-analysis-steps" aria-label="Этапы анализа">
+        {stages.map((label, index) => (
+          <span
+            className={`badge ai-analysis-step ${index < stage ? "complete" : index === stage ? "current" : "pending"}`}
+            key={label}
+          >
+            {index < stage ? <Check size={12} aria-hidden="true" /> : index + 1}
+            {label}
+          </span>
+        ))}
+      </div>
+      <progress
+        max={stages.length}
+        value={stage + 1}
+        aria-label={`Анализ черновика: шаг ${stage + 1} из ${stages.length}`}
+      />
+    </div>
+  );
+}
 function Draft() {
   const { businessId, meta } = useSession();
   const navigate = useNavigate();
+  const createLock = useRef(false);
   const [draft, setDraft] = useState("");
   const [topic, setTopic] = useState("");
   const create = useMutation({
@@ -95,7 +155,13 @@ function Draft() {
             className="panel draft-panel"
             onSubmit={(e) => {
               e.preventDefault();
-              create.mutate();
+              if (createLock.current || create.isPending) return;
+              createLock.current = true;
+              create.mutate(undefined, {
+                onSettled: () => {
+                  createLock.current = false;
+                },
+              });
             }}
           >
             <div className="section-icon">
@@ -127,7 +193,7 @@ function Draft() {
                 <Sparkles size={14} />
                 Попробовать пример
               </button>
-              <small className="muted">{draft.length} / 4000</small>
+              <small className="field-counter">{draft.length} / 4000</small>
             </div>
             <label htmlFor="topic">Тема задачи</label>
             <select
@@ -156,7 +222,7 @@ function Draft() {
                 <ArrowRight size={16} />
               </Button>
             </div>
-            {create.isPending && <Loading label="AI читает черновик…" />}
+            {create.isPending && <AnalyzeProgress />}
             {create.isError && <ErrorState error={create.error} />}
           </form>
           <div className="trust-note">
@@ -220,6 +286,7 @@ function FieldEditor({
   placeholder,
   busy,
   patch,
+  feedback,
 }: {
   fieldKey: FieldKey;
   field: CardField;
@@ -229,14 +296,34 @@ function FieldEditor({
   patch: (
     key: FieldKey,
     change: { value?: string; confirm?: boolean; reject?: boolean },
+    feedback: FieldFeedback,
   ) => Promise<unknown>;
+  feedback?: FieldFeedback;
 }) {
   const [value, setValue] = useState(field.value || "");
+  const [expanded, setExpanded] = useState(field.status !== "confirmed");
   const dirty = value !== (field.value || "");
   return (
-    <section className={`field-card field-${field.status}`}>
+    <section
+      id={`field-section-${fieldKey}`}
+      className={`field-card field-${field.status} ${expanded ? "expanded" : "collapsed"} ${feedback ? `field-action-${feedback}` : ""}`}
+      data-feedback={feedback}
+    >
       <div className="row between">
-        <label htmlFor={`field-${fieldKey}`}>{label}</label>
+        <button
+          type="button"
+          className="field-heading"
+          aria-expanded={expanded}
+          aria-controls={`field-content-${fieldKey}`}
+          aria-disabled={dirty}
+          title={dirty ? "Сначала сохраните или отмените изменения" : undefined}
+          onClick={() => {
+            if (!dirty) setExpanded((current) => !current);
+          }}
+        >
+          <ChevronDown size={16} />
+          <span>{label}</span>
+        </button>
         <span className={`badge status-${field.status}`}>
           {field.status === "confirmed"
             ? "Подтверждено"
@@ -245,75 +332,110 @@ function FieldEditor({
               : "Пусто"}
         </span>
       </div>
-      <textarea
-        id={`field-${fieldKey}`}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        placeholder={placeholder}
-        maxLength={4000}
-        rows={fieldKey === "title" ? 2 : 3}
-        disabled={busy}
-      />
-      {field.status === "suggested" && (
-        <details className="evidence">
-          <summary>
-            На основании вашего текста · {field.evidence.length} цитат
-          </summary>
-          {field.evidence.map((e, i) => (
-            <blockquote key={i}>
-              «{e.quote}»<cite>Источник: {e.source}</cite>
-            </blockquote>
-          ))}
-        </details>
+      {!expanded && (
+        <button
+          type="button"
+          className="field-preview"
+          onClick={() => setExpanded(true)}
+        >
+          {field.value || placeholder}
+        </button>
       )}
-      <div className="row field-actions">
-        {dirty && (
-          <>
-            <Button
-              size="sm"
-              disabled={busy}
-              onClick={() =>
-                void patch(fieldKey, { value }).catch(() => undefined)
-              }
-            >
-              Сохранить
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setValue(field.value || "")}
-            >
-              Отменить
-            </Button>
-          </>
+      <div
+        id={`field-content-${fieldKey}`}
+        className="field-content"
+        hidden={!expanded}
+      >
+        <label className="sr-only" htmlFor={`field-${fieldKey}`}>
+          {label}
+        </label>
+        <textarea
+          id={`field-${fieldKey}`}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder={placeholder}
+          maxLength={4000}
+          rows={fieldKey === "title" ? 2 : 3}
+          disabled={busy}
+        />
+        {field.status === "suggested" && (
+          <details className="evidence">
+            <summary>
+              На основании вашего текста · {field.evidence.length} цитат
+            </summary>
+            {field.evidence.map((e, i) => (
+              <blockquote key={i}>
+                «{e.quote}»<cite>Источник: {e.source}</cite>
+              </blockquote>
+            ))}
+          </details>
         )}
-        {field.status === "suggested" && !dirty && (
-          <>
-            <Button
-              size="sm"
-              variant="secondary"
-              disabled={busy}
-              onClick={() =>
-                void patch(fieldKey, { confirm: true }).catch(() => undefined)
-              }
-            >
-              <Check size={14} />
-              Подтвердить
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={busy}
-              onClick={() =>
-                void patch(fieldKey, { reject: true }).catch(() => undefined)
-              }
-            >
-              <X size={14} />
-              Отклонить
-            </Button>
-          </>
-        )}
+        <div className="row field-actions">
+          {dirty && (
+            <>
+              <Button
+                className="field-action-save"
+                size="sm"
+                disabled={busy}
+                onClick={() =>
+                  void patch(fieldKey, { value }, "success").catch(
+                    () => undefined,
+                  )
+                }
+              >
+                Сохранить
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => setValue(field.value || "")}
+              >
+                Отменить
+              </Button>
+            </>
+          )}
+          {field.status === "suggested" && !dirty && (
+            <>
+              <Button
+                className="field-action-confirm"
+                size="sm"
+                variant="secondary"
+                disabled={busy}
+                onClick={() =>
+                  void patch(fieldKey, { confirm: true }, "success").catch(
+                    () => undefined,
+                  )
+                }
+              >
+                <Check size={14} />
+                Подтвердить
+              </Button>
+              <Button
+                className="field-action-reject"
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onClick={() =>
+                  void patch(fieldKey, { reject: true }, "rejected").catch(
+                    () => undefined,
+                  )
+                }
+              >
+                <X size={14} />
+                Отклонить
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+      {feedback && (
+        <span className="sr-only" role="status">
+          {feedback === "rejected"
+            ? `${label}: предложение отклонено`
+            : `${label}: изменение сохранено`}
+        </span>
+      )}
     </section>
   );
 }
@@ -328,6 +450,19 @@ function Editor({ task }: { task: TaskDetail }) {
   const [checked, setChecked] = useState(false);
   const [success, setSuccess] = useState(false);
   const [inspector, setInspector] = useState(false);
+  const [fieldFeedback, setFieldFeedback] = useState<{
+    field: FieldKey;
+    state: FieldFeedback;
+  } | null>(null);
+  const actionLock = useRef(false);
+  const feedbackTimer = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current !== undefined)
+        window.clearTimeout(feedbackTimer.current);
+    },
+    [],
+  );
   const mutation = useMutation({
     mutationFn: (action: () => Promise<TaskDetail>) => action(),
     onSuccess: (t) => {
@@ -338,23 +473,67 @@ function Editor({ task }: { task: TaskDetail }) {
     },
     onError: (e) => toast.error(e.message),
   });
-  const act = (action: () => Promise<TaskDetail>) =>
-    mutation.mutateAsync(action);
-  const patch = (
+  const act = async (action: () => Promise<TaskDetail>) => {
+    if (actionLock.current) throw new Error("Действие уже выполняется");
+    actionLock.current = true;
+    try {
+      return await mutation.mutateAsync(action);
+    } finally {
+      actionLock.current = false;
+    }
+  };
+  const showFieldFeedback = (field: FieldKey, state: FieldFeedback) => {
+    setFieldFeedback({ field, state });
+    if (feedbackTimer.current !== undefined)
+      window.clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = window.setTimeout(() => {
+      setFieldFeedback((current) =>
+        current?.field === field && current.state === state ? null : current,
+      );
+      feedbackTimer.current = undefined;
+    }, 900);
+  };
+  const patch = async (
     field: FieldKey,
     change: { value?: string; confirm?: boolean; reject?: boolean },
-  ) => act(() => api.patch(task.id, { [field]: change }));
+    feedback: FieldFeedback,
+  ) => {
+    setFieldFeedback((current) => (current?.field === field ? null : current));
+    const result = await act(() => api.patch(task.id, { [field]: change }));
+    showFieldFeedback(field, feedback);
+    return result;
+  };
   const confirm = () => {
     void act(() => api.confirm(task.id)).catch(() => undefined);
   };
   const round = Math.max(1, ...task.questions.map((q) => q.round));
   const questions = task.questions.filter((q) => q.round === round);
+  const confirmedCount = Object.values(task.card).filter(
+    (field) => field.status === "confirmed",
+  ).length;
+  const unconfirmedCount = meta.fields.length - confirmedCount;
   const focus = (field: FieldKey) => {
     setView("card");
     window.setTimeout(() => {
+      const section = document.getElementById(`field-section-${field}`);
       const el = document.getElementById(`field-${field}`);
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-      el?.focus();
+      const content = document.getElementById(`field-content-${field}`);
+      section?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "center",
+      });
+      if (el && !content?.hidden) {
+        el.focus();
+        return;
+      }
+      const toggle =
+        section?.querySelector<HTMLButtonElement>(".field-heading");
+      toggle?.click();
+      window.setTimeout(() => {
+        document.getElementById(`field-${field}`)?.focus();
+      }, 0);
     }, 80);
   };
   return (
@@ -388,6 +567,38 @@ function Editor({ task }: { task: TaskDetail }) {
               : 2
         }
       />
+      <div className={`mobile-rating-summary score-${task.rating.level.key}`}>
+        <div className="mobile-rating-topline">
+          <span>Готовность задачи</span>
+          <LevelBadge level={task.rating.level} />
+        </div>
+        <div className="mobile-rating-score">
+          <strong>{task.rating.score}</strong>
+          <span>/100</span>
+          {task.rating.delta > 0 && <b>+{task.rating.delta}</b>}
+        </div>
+        <progress
+          max="100"
+          value={task.rating.score}
+          aria-label={`Готовность задачи: ${task.rating.score} из 100`}
+        />
+        <div className="mobile-rating-bottomline">
+          <span>
+            {task.rating.next_level
+              ? `До «${task.rating.next_level.label}» — ${task.rating.next_level.points_needed}`
+              : "Максимальный уровень достигнут"}
+          </span>
+          {task.rating.potential_score > task.rating.score && (
+            <button
+              type="button"
+              onClick={confirm}
+              disabled={mutation.isPending}
+            >
+              Подтвердить +{task.rating.potential_score - task.rating.score}
+            </button>
+          )}
+        </div>
+      </div>
       {success && (
         <div className="success-banner">
           <CheckCheck size={23} />
@@ -485,21 +696,29 @@ function Editor({ task }: { task: TaskDetail }) {
                       placeholder={f.placeholder}
                       busy={mutation.isPending}
                       patch={patch}
+                      feedback={
+                        fieldFeedback?.field === f.key
+                          ? fieldFeedback.state
+                          : undefined
+                      }
                     />
                   ))}
               </div>
             </>
           ) : (
             <>
-              <div className="row between editor-toolbar">
-                <span className="muted">
-                  {
-                    Object.values(task.card).filter(
-                      (f) => f.status === "confirmed",
-                    ).length
-                  }{" "}
-                  из {meta.fields.length} полей подтверждено
-                </span>
+              <div className="editor-toolbar">
+                <div className="editor-progress-copy">
+                  <span>Заполнение карточки</span>
+                  <b>
+                    {confirmedCount} из {meta.fields.length}
+                  </b>
+                </div>
+                <progress
+                  max={meta.fields.length}
+                  value={confirmedCount}
+                  aria-label={`${confirmedCount} из ${meta.fields.length} полей подтверждено`}
+                />
                 <Button
                   variant="secondary"
                   size="sm"
@@ -523,6 +742,11 @@ function Editor({ task }: { task: TaskDetail }) {
                   placeholder={f.placeholder}
                   busy={mutation.isPending}
                   patch={patch}
+                  feedback={
+                    fieldFeedback?.field === f.key
+                      ? fieldFeedback.state
+                      : undefined
+                  }
                 />
               ))}
               <div className="publish-bar">
@@ -566,11 +790,9 @@ function Editor({ task }: { task: TaskDetail }) {
         description="В публичной карточке будут только подтверждённые вами факты."
       >
         <p className="warning">
-          {
-            Object.values(task.card).filter((f) => f.status !== "confirmed")
-              .length
-          }{" "}
-          полей не подтверждены и не попадут в карточку.
+          {unconfirmedCount === 0
+            ? "Все поля подтверждены и попадут в публичную карточку."
+            : `${unconfirmedCount} ${pluralize(unconfirmedCount, "поле", "поля", "полей")} не ${unconfirmedCount === 1 ? "подтверждено" : "подтверждены"} и не ${unconfirmedCount === 1 ? "попадёт" : "попадут"} в карточку.`}
         </p>
         {task.card.title.status !== "confirmed" && (
           <p className="error-text">Сначала подтвердите название задачи.</p>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { animate, motion } from "motion/react";
+import { animate, motion, useReducedMotion } from "motion/react";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Award, Check, ChevronRight, Sparkles, TrendingUp } from "lucide-react";
@@ -35,6 +35,7 @@ export function RatingPanel({
 }) {
   const [display, setDisplay] = useState(rating.score);
   const previous = useRef(rating);
+  const reduceMotion = useReducedMotion();
   const history = useQuery({
     queryKey: ["history", taskId],
     queryFn: () => api.history(taskId),
@@ -42,9 +43,7 @@ export function RatingPanel({
   });
   useEffect(() => {
     const controls = animate(previous.current.score, rating.score, {
-      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? 0
-        : 0.65,
+      duration: reduceMotion ? 0 : 0.65,
       onUpdate: (v) => setDisplay(Math.round(v)),
     });
     if (!readOnly) {
@@ -68,7 +67,7 @@ export function RatingPanel({
     }
     previous.current = rating;
     return () => controls.stop();
-  }, [rating, readOnly]);
+  }, [rating, readOnly, reduceMotion]);
   return (
     <aside className={`rating-panel level-border-${rating.level.key}`}>
       <div className="row between">
@@ -96,7 +95,7 @@ export function RatingPanel({
             strokeDasharray="427.26"
             animate={{ strokeDashoffset: 427.26 * (1 - rating.score / 100) }}
             initial={false}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: reduceMotion ? 0 : 0.7 }}
             transform="rotate(-90 80 80)"
           />
         </svg>
@@ -107,8 +106,10 @@ export function RatingPanel({
         {rating.delta !== 0 && !readOnly && (
           <motion.b
             className="score-delta"
+            role="status"
+            aria-live="polite"
             key={`${rating.score}-${rating.delta}`}
-            initial={{ opacity: 0, y: 12 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
           >
             {rating.delta > 0 ? "+" : ""}
@@ -124,7 +125,11 @@ export function RatingPanel({
           ? `До «${rating.next_level.label}» — ${rating.next_level.points_needed} баллов`
           : "Задача полностью готова к работе"}
       </p>
-      <progress max="100" value={rating.score} aria-label="Готовность задачи" />
+      <progress
+        max="100"
+        value={rating.score}
+        aria-label={`Готовность задачи: ${rating.score} из 100`}
+      />
       {onConfirm && rating.potential_score > rating.score && (
         <div className="potential">
           <Sparkles size={17} />
