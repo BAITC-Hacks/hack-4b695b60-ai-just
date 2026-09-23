@@ -80,9 +80,11 @@ flowchart LR
 │   │   ├── db.py             # engine, сессии SQLModel
 │   │   ├── models.py         # таблицы
 │   │   ├── schemas.py        # DTO API (Pydantic), совпадают с docs/api-contract.md
+│   │   ├── errors.py         # доменные ошибки {"detail": {"code", "message"}}
 │   │   ├── seed.py           # загрузка data/seed, пересчёт рейтингов
 │   │   ├── api/              # роутеры: meta, participants, tasks, catalog, proposals, leaderboard, admin | ai, recommendations (зона A2)
-│   │   ├── domain/           # fields.py, rating.py, levels.py, catalog.py — чистые функции
+│   │   ├── services/         # сценарии задачи поверх domain/ и AIService: создание, ответы, пересчёт
+│   │   ├── domain/           # fields.py, rating.py, card.py, catalog.py — чистые функции
 │   │   ├── ai/               # зона A2: contracts.py, router.py, providers/, prompts/, clarify.py, card_builder.py, grounding.py, pii.py, stub.py, question_bank.py, trace.py
 │   │   └── ml/               # зона A2: embeddings.py, recommend.py, similarity.py
 │   ├── eval/                 # зона A2: dataset.jsonl, run_eval.py, reports/
@@ -118,7 +120,7 @@ erDiagram
 | `business` | `id`, `name`, `industry`, `created_at` |
 | `team` | `id`, `name`, `interests` (JSON list), `skills` (JSON list), `technologies` (JSON list), `progress_points` (int, 0) |
 | `task` | `id`, `business_id`, `status`, `topic`, `draft_text`, `card` (JSON), `score`, `potential_score`, `level`, `created_at`, `updated_at`, `published_at` |
-| `question` | `id` (строка вида `q1`, уникальна в пределах задачи), `task_id`, `field`, `question`, `why`, `points_gain`, `answer` (nullable), `round`, `created_at` |
+| `question` | `id`, `task_id`, `key` (строка вида `q1`, уникальна в пределах задачи; в API отдаётся как `id`), `field`, `question`, `why`, `points_gain`, `answer` (nullable), `round`, `created_at` |
 | `score_event` | `id`, `task_id`, `score`, `delta`, `level`, `reason`, `created_at` |
 | `proposal` | `id`, `task_id`, `team_id`, `idea`, `plan`, `timeline`, `prototype_url` (nullable), `status`, `business_comment`, `created_at`, `decided_at` |
 | `milestone` | `id`, `proposal_id`, `title`, `points` (по умолчанию 10), `status`, `created_at`, `confirmed_at` |
@@ -250,7 +252,8 @@ NVIDIA_MODEL=nvidia/nemotron-3-nano-30b-a3b
 NVIDIA_EMBED_MODEL=nvidia/nemotron-3-embed-1b
 
 # --- NVIDIA Brev (своя модель: vLLM или NIM, OpenAI-совместимый) ---
-BREV_LLM_BASE_URL=http://localhost:8001/v1
+# Пусто = провайдер выключен. После brev port-forward: http://localhost:8001/v1
+BREV_LLM_BASE_URL=
 BREV_LLM_MODEL=nemotron-3-nano
 BREV_LLM_API_KEY=
 

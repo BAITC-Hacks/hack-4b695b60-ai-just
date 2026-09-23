@@ -4,7 +4,7 @@
 
 | Агент | Зона | Папки | Ветка и папка |
 | --- | --- | --- | --- |
-| **A1 — Cursor** | Ядро backend: API, БД, рейтинг, каталог, отклики, seed, тесты, Docker | `backend/app/{main,config,db,models,schemas,seed}.py`, `backend/app/api/` (кроме `ai.py`, `recommendations.py`), `backend/app/domain/`, `backend/tests/`, `data/seed/`, `docker-compose.yml`, `backend/pyproject.toml` | `feat/backend-core`, `D:\projects\hakaton` |
+| **A1 — Cursor** | Ядро backend: API, БД, рейтинг, каталог, отклики, seed, тесты, Docker | `backend/app/{main,config,db,models,schemas,seed,errors}.py`, `backend/app/api/` (кроме `ai.py`, `recommendations.py`), `backend/app/services/`, `backend/app/domain/`, `backend/tests/` (кроме `test_ai_*.py`), `data/seed/`, `docker-compose.yml`, `backend/pyproject.toml` | `feat/backend-core`, `D:\projects\hakaton` |
 | **A2 — Codex** | AI и ML: провайдеры, промпты, grounding, PII, заглушка, эмбеддинги, рекомендации, eval, Brev | `backend/app/ai/`, `backend/app/ml/`, `backend/app/api/ai.py`, `backend/app/api/recommendations.py`, `backend/eval/`, `infra/brev/` | `feat/ai-ml`, `..\hakaton-ai` (worktree) |
 
 Если удобнее наоборот (Codex на ядре, Cursor на AI), поменяй местами: зоны остаются те же.

@@ -1,0 +1,80 @@
+[
+  {
+    "key": "p_steppe_zhibek",
+    "task": "zhibek_demand",
+    "team": "steppe_data",
+    "status": "selected",
+    "business_comment": "Сильный опыт прогнозирования, стартуем с пилота",
+    "idea": "Модель прогноза спроса по дням и позициям на истории чеков с учётом праздников и погоды, рекомендации заказа — в утреннем отчёте.",
+    "plan": "1) Разбор выгрузок из 1С и очистка данных. 2) Базовая модель прогноза на 3 магазинах. 3) Сервис рекомендаций заказа. 4) Дашборд точности прогноза.",
+    "timeline": "8 недель",
+    "prototype_url": "https://github.com/example/steppe-demand"
+  },
+  {
+    "key": "p_qazcode_zhibek",
+    "task": "zhibek_demand",
+    "team": "qazcode",
+    "idea": "Веб-панель для закупщиков: рекомендованный заказ и история списаний по каждой позиции.",
+    "plan": "1) Интервью с закупщиками. 2) Прототип интерфейса. 3) Подключение к выгрузкам 1С. 4) Пилот в одном магазине.",
+    "timeline": "6 недель",
+    "prototype_url": "https://github.com/example/qazcode-orders"
+  },
+  {
+    "key": "p_uxsapa_medisa",
+    "task": "medisa_reminders",
+    "team": "ux_sapa",
+    "idea": "Исследуем, почему пациенты пропускают приёмы, и проектируем сценарий напоминаний, который пациенты не будут игнорировать.",
+    "plan": "1) Интервью с администраторами и пациентами. 2) Карта пути пациента. 3) Прототип диалога бота в Figma. 4) Юзабилити-тест.",
+    "timeline": "4 недели",
+    "prototype_url": "https://www.figma.com/example/medisa-reminders"
+  },
+  {
+    "key": "p_nomad_medisa",
+    "task": "medisa_reminders",
+    "team": "nomad_ai",
+    "status": "rejected",
+    "business_comment": "Нужен опыт работы с медицинскими данными",
+    "idea": "Telegram-бот с напоминаниями и подтверждением записи, интеграция с расписанием через API.",
+    "plan": "1) Разбор API МИС. 2) Бот с напоминаниями. 3) Подтверждение и отмена записи. 4) Пилот на одном отделении.",
+    "timeline": "5 недель",
+    "prototype_url": "https://github.com/example/nomad-reminders"
+  },
+  {
+    "key": "p_agrovision_agronur",
+    "task": "agronur_disease",
+    "team": "agrovision",
+    "status": "selected",
+    "business_comment": "Есть опыт с моделями на Android, берём",
+    "idea": "Лёгкая модель классификации болезней по фото листа, которая работает офлайн на Android.",
+    "plan": "1) Доразметка 3 000 фото. 2) Обучение и сжатие модели. 3) Android-приложение с офлайн-распознаванием. 4) Полевые испытания.",
+    "timeline": "10 недель",
+    "prototype_url": "https://github.com/example/agrovision-wheat"
+  },
+  {
+    "key": "p_finbots_altyn",
+    "task": "altyn_documents",
+    "team": "finbots",
+    "idea": "OCR и правила проверки комплектности пакета документов, отчёт для менеджера о недостающих документах.",
+    "plan": "1) Список обязательных документов по типам заявок. 2) OCR сканов. 3) Проверка комплектности. 4) Отчёт для менеджера.",
+    "timeline": "6 недель",
+    "prototype_url": "https://github.com/example/finbots-docs"
+  },
+  {
+    "key": "p_nomad_dala",
+    "task": "dala_routes",
+    "team": "nomad_ai",
+    "idea": "Сервис построения маршрутов курьеров по списку адресов с учётом пробок.",
+    "plan": "1) Уточнить требования у бизнеса. 2) Прототип на открытых картах. 3) Сравнение с текущими маршрутами.",
+    "timeline": "4 недели",
+    "prototype_url": "https://github.com/example/nomad-routes"
+  },
+  {
+    "key": "p_qazcode_dala",
+    "task": "dala_routes",
+    "team": "qazcode",
+    "idea": "Мобильное приложение для курьера с оптимальным порядком адресов.",
+    "plan": "1) Интервью с курьерами. 2) Прототип приложения. 3) Пилот на одной смене.",
+    "timeline": "5 недель",
+    "prototype_url": "https://github.com/example/qazcode-courier"
+  }
+]

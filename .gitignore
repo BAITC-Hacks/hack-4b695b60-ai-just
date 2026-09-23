@@ -1,0 +1,29 @@
+# Секреты
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Базы данных
+*.db
+*.db-journal
+*.sqlite3
+
+# Frontend
+node_modules/
+dist/
+
+# Eval: сырые ответы моделей
+backend/eval/reports/*.json
+
+# ОС и IDE
+.DS_Store
+Thumbs.db
+.idea/

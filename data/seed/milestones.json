@@ -1,0 +1,14 @@
+[
+  {
+    "proposal": "p_steppe_zhibek",
+    "title": "Прототип модели прогноза на данных 3 магазинов",
+    "points": 10,
+    "status": "confirmed"
+  },
+  {
+    "proposal": "p_agrovision_agronur",
+    "title": "Разметка 500 фото и базовая модель",
+    "points": 15,
+    "status": "pending"
+  }
+]

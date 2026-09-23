@@ -34,7 +34,7 @@
 
 | Зона | Человек | Агент | Пути |
 | --- | --- | --- | --- |
-| A1 — ядро backend | A | Cursor | `backend/app/{main,config,db,models,schemas,seed}.py`, `backend/app/api/` (кроме `ai.py` и `recommendations.py`), `backend/app/domain/`, `backend/tests/`, `data/seed/`, `docker-compose.yml`, `backend/pyproject.toml` |
+| A1 — ядро backend | A | Cursor | `backend/app/{main,config,db,models,schemas,seed,errors}.py`, `backend/app/api/` (кроме `ai.py` и `recommendations.py`), `backend/app/services/`, `backend/app/domain/`, `backend/tests/` (кроме `test_ai_*.py`), `data/seed/`, `docker-compose.yml`, `backend/pyproject.toml` |
 | A2 — AI и ML | A | Codex | `backend/app/ai/`, `backend/app/ml/`, `backend/app/api/ai.py`, `backend/app/api/recommendations.py`, `backend/eval/`, `infra/brev/`, `backend/tests/test_ai_*.py` |
 | B — frontend | B | его агент | `frontend/` |
 | Общее | A + B | — | `docs/`, `README.md`, `AGENTS.md`, `.env.example`, `.gitignore` — меняет человек или агент по прямой просьбе |

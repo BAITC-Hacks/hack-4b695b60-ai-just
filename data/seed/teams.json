@@ -1,0 +1,44 @@
+[
+  {
+    "key": "nomad_ai",
+    "name": "Nomad AI",
+    "interests": ["логистика", "клиентский сервис", "обработка текста"],
+    "skills": ["Python", "NLP", "Telegram-боты", "промпт-инжиниринг"],
+    "technologies": ["Python", "FastAPI", "OpenAI API", "PostgreSQL", "Telegram Bot API"]
+  },
+  {
+    "key": "steppe_data",
+    "name": "Steppe Data",
+    "interests": ["ритейл", "аналитика", "финансы"],
+    "skills": ["SQL", "BI-аналитика", "прогнозирование спроса", "визуализация данных"],
+    "technologies": ["Python", "pandas", "PostgreSQL", "Power BI", "Apache Superset"]
+  },
+  {
+    "key": "qazcode",
+    "name": "QazCode",
+    "interests": ["образование", "госуслуги", "мобильные приложения"],
+    "skills": ["веб-разработка", "мобильная разработка", "UX"],
+    "technologies": ["React", "TypeScript", "Node.js", "Flutter"]
+  },
+  {
+    "key": "agrovision",
+    "name": "AgroVision",
+    "interests": ["агро", "экология", "компьютерное зрение"],
+    "skills": ["компьютерное зрение", "машинное обучение", "разметка данных"],
+    "technologies": ["Python", "PyTorch", "OpenCV", "YOLO", "Android"]
+  },
+  {
+    "key": "finbots",
+    "name": "FinBots",
+    "interests": ["финансы", "автоматизация", "LLM"],
+    "skills": ["LLM", "OCR", "интеграции", "backend"],
+    "technologies": ["Python", "FastAPI", "Docker", "1С", "Tesseract"]
+  },
+  {
+    "key": "ux_sapa",
+    "name": "UX Sapa",
+    "interests": ["здравоохранение", "образование", "сервис-дизайн"],
+    "skills": ["UX-исследования", "прототипирование", "CJM", "юзабилити-тесты"],
+    "technologies": ["Figma", "Miro", "Tilda"]
+  }
+]

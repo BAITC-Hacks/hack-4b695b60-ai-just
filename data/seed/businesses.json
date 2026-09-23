@@ -1,0 +1,8 @@
+[
+  { "key": "dala", "name": "Дала Логистик", "industry": "logistics" },
+  { "key": "zhibek", "name": "Жибек Маркет", "industry": "retail" },
+  { "key": "agronur", "name": "АгроНур", "industry": "agro" },
+  { "key": "qazedu", "name": "Qazaq EdTech Lab", "industry": "education" },
+  { "key": "medisa", "name": "Медиса Клиник", "industry": "healthcare" },
+  { "key": "altyn", "name": "Алтын Финанс", "industry": "finance" }
+]
