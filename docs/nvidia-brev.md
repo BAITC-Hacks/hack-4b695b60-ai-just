@@ -9,7 +9,7 @@ NVIDIA Build API в проекте не используется. Nemotron за�
 3. Выберите VM с Docker/CUDA и SSH или JupyterLab, задайте имя `challenge-hub-llm`, затем создайте окружение.
 4. В разделе окружения откройте терминал и проверьте `nvidia-smi` и `docker --version`.
 
-Инстанс тарифицируется во время работы. При кредите $50, например, цена $2.63/ч даёт менее 19 часов без учёта хранения и иных расходов. Остановите инстанс после проверки; если у провайдера нет stop/start, удалите его.
+Инстанс тарифицируется во время работы. Созданный для демо Crusoe L40S с 384 GiB диска стоит $1.79/ч; при кредите $50 это около 27 часов без учёта дальнейшего хранения. Остановите инстанс после проверки; если у провайдера нет stop/start, удалите его.
 
 ## 2. Запуск vLLM на инстансе
 
@@ -18,11 +18,11 @@ NVIDIA Build API в проекте не используется. Nemotron за�
 ```bash
 export BREV_LLM_API_KEY="$(openssl rand -hex 24)"
 bash serve_vllm.sh
-docker logs -f challenge-hub-nemotron
+docker inspect --format '{{.State.Status}}' challenge-hub-nemotron
 curl -fsS http://localhost:8000/v1/models -H "Authorization: Bearer $BREV_LLM_API_KEY"
 ```
 
-Сохраните ключ только в корневом `.env` проекта на ноутбуке. Скрипт использует `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8` из Hugging Face и OpenAI-совместимый сервер vLLM. При нехватке памяти уменьшите `--max-model-len` в скрипте или выберите меньшую модель и обновите `BREV_LLM_MODEL`.
+Сохраните ключ только в корневом `.env` проекта на ноутбуке. Скрипт использует `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8` из Hugging Face и OpenAI-совместимый сервер vLLM `v0.12.0`, рекомендованный в рецепте модели. Для драйвера 565 на текущем Brev-инстансе включён режим CUDA compatibility. У версии 0.12 аргументы запуска могут попасть в Docker logs, поэтому скрипт отключает логирование контейнера; ключ проверяется запросом к `/v1/models`. При нехватке памяти уменьшите `BREV_MAX_MODEL_LEN` или выберите меньшую модель и обновите `BREV_LLM_MODEL`.
 
 ## 3. Подключение к backend
 
@@ -32,11 +32,11 @@ Brev CLI устанавливается в Ubuntu/WSL на Windows:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/brevdev/brev-cli/main/bin/install-latest.sh)"
 brev login
 brev refresh
-brev list
+brev ls
 brev port-forward challenge-hub-llm --port 8001:8000
 ```
 
-Туннель должен оставаться запущенным. В корневом `.env` проекта:
+Туннель должен оставаться запущенным. Если команда вернулась сразу, после `brev refresh` запустите SSH-туннель без multiplexing и оставьте терминал открытым: `ssh -S none -o ControlMaster=no -N -L 8001:127.0.0.1:8000 challenge-hub-llm`. В корневом `.env` проекта:
 
 ```dotenv
 AI_PROVIDER_CHAIN=openai,brev,stub

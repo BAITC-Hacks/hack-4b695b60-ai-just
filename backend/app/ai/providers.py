@@ -26,11 +26,16 @@ def provider_available(name: str, settings: Settings) -> bool:
 
 def _client(name: str, settings: Settings) -> OpenAI:
     if name == "openai":
-        return OpenAI(api_key=settings.openai_api_key, timeout=settings.ai_timeout_seconds)
+        return OpenAI(
+            api_key=settings.openai_api_key,
+            timeout=settings.ai_timeout_seconds,
+            max_retries=1,
+        )
     return OpenAI(
         api_key=settings.brev_llm_api_key,
         base_url=settings.brev_llm_base_url,
         timeout=settings.ai_timeout_seconds,
+        max_retries=1,
     )
 
 
@@ -57,6 +62,7 @@ def generate_json(
         "response_format": {"type": "json_object"},
     }
     if name == "openai":
+        kwargs["reasoning_effort"] = settings.openai_reasoning_effort
         kwargs["response_format"] = {
             "type": "json_schema",
             "json_schema": {"name": schema.__name__, "strict": False, "schema": schema.model_json_schema()},
