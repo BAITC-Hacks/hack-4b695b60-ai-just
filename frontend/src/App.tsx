@@ -124,12 +124,8 @@ function Shell() {
   const activeTeam = teams.data.some((t) => t.id === teamId)
     ? teamId
     : teams.data[0].id;
-  const activeProvider = health.data?.ai.chain.find(
-    (p) =>
-      p.available &&
-      (health.data.ai.mode === "auto" || p.name === health.data.ai.mode),
-  );
-  const providerLabels = {
+  const activeProvider = health.data?.ai.chain.find((p) => p.available);
+  const providerLabels: Record<ProviderName, string> = {
     openai: "OpenAI",
     brev: "Brev",
     stub: "Офлайн",
@@ -159,6 +155,9 @@ function Shell() {
         teams: teams.data,
       }}
     >
+      <a className="skip-link" href="#main-content">
+        Перейти к содержимому
+      </a>
       <div className="app-shell">
         <aside className="sidebar">
           <Link className="brand" to="/catalog">
@@ -170,9 +169,9 @@ function Shell() {
             </div>
           </Link>
           <div className="workspace-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
-          <nav>
+          <nav aria-label="Основная навигация">
             {links.map(({ to, label, icon: Icon }) => (
-              <NavLink key={to} to={to}>
+              <NavLink key={to} to={to} aria-label={label}>
                 <Icon size={19} />
                 <span>{label}</span>
                 {to === "/builder" && <span className="nav-dot" />}
@@ -209,8 +208,10 @@ function Shell() {
               {role === "business" ? "Для бизнеса" : "Для команд"}
             </span>
             <div className="topbar-controls">
-              <div className="role-switch" aria-label="Роль">
+              <div className="role-switch" role="group" aria-label="Роль">
                 <button
+                  type="button"
+                  aria-pressed={role === "business"}
                   className={role === "business" ? "active" : ""}
                   onClick={() => {
                     setRole("business");
@@ -222,6 +223,8 @@ function Shell() {
                   Бизнес
                 </button>
                 <button
+                  type="button"
+                  aria-pressed={role === "team"}
                   className={role === "team" ? "active" : ""}
                   onClick={() => {
                     setRole("team");
@@ -282,7 +285,10 @@ function Shell() {
               </span>
             </div>
           )}
-          <main key={`${role}-${activeBusiness}-${activeTeam}`}>
+          <main
+            id="main-content"
+            key={`${role}-${activeBusiness}-${activeTeam}`}
+          >
             <Routes>
               <Route
                 path="/"

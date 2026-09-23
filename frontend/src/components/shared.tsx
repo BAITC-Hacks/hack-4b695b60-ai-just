@@ -3,14 +3,15 @@ import { Link } from "react-router";
 import type { ReactNode } from "react";
 import type { CatalogItem, Level } from "@/api/types";
 import { useSession } from "@/lib/session";
+import { pluralize } from "@/lib/text";
 import { Button } from "./ui/button";
 export function Loading({ label = "Загружаем данные…" }: { label?: string }) {
   return (
-    <div className="loading" role="status">
+    <div className="loading" role="status" aria-live="polite">
       <LoaderCircle className="spin" size={23} />
       <p>{label}</p>
-      <div className="skeleton" />
-      <div className="skeleton short" />
+      <div className="skeleton" aria-hidden="true" />
+      <div className="skeleton short" aria-hidden="true" />
     </div>
   );
 }
@@ -24,7 +25,7 @@ export function ErrorState({
   return (
     <div className="error-box" role="alert">
       <AlertCircle size={22} />
-      <div>
+      <div className="page-heading-content">
         <strong>Не получилось загрузить данные</strong>
         <p>{error?.message || "Попробуйте ещё раз."}</p>
         {retry && (
@@ -83,6 +84,12 @@ export function LevelBadge({ level }: { level: Level }) {
 }
 export function TaskTile({ task }: { task: CatalogItem }) {
   const { meta } = useSession();
+  const proposalsLabel = pluralize(
+    task.proposals_count,
+    "отклик",
+    "отклика",
+    "откликов",
+  );
   return (
     <Link
       className={`task-tile ${task.highlighted ? "highlighted" : ""} ${task.needs_clarification ? "needs-clarification" : ""}`}
@@ -92,7 +99,9 @@ export function TaskTile({ task }: { task: CatalogItem }) {
         <span className="topic">
           {meta.topics.find((t) => t.key === task.topic)?.label || "Без темы"}
         </span>
-        <span className="catalog-number">№{task.position} в каталоге</span>
+        <span className="catalog-number">
+          <b>№{task.position}</b> в каталоге
+        </span>
       </div>
       <h3>{task.title}</h3>
       <p className="business-name">{task.business_name}</p>
@@ -110,12 +119,17 @@ export function TaskTile({ task }: { task: CatalogItem }) {
         </span>
       </div>
       <div className="row between tile-bottom">
-        <span>{task.proposals_count} откликов</span>
-        <ArrowUpRight size={18} />
+        <span>
+          {task.proposals_count} {proposalsLabel}
+        </span>
+        <span className="tile-cta">
+          Подробнее <ArrowUpRight size={16} />
+        </span>
       </div>
     </Link>
   );
 }
+
 export function SafeLink({ url }: { url: string }) {
   let safe = false;
   try {

@@ -25,6 +25,18 @@ export type FieldStatus = "empty" | "suggested" | "confirmed";
 export type ProposalStatus = "submitted" | "selected" | "rejected";
 export type ProviderName = "openai" | "brev" | "stub";
 
+export interface ProviderStatus {
+  name: ProviderName;
+  model: string;
+  available: boolean;
+}
+
+export interface ProviderState {
+  mode: "auto" | ProviderName;
+  chain: ProviderStatus[];
+  active: ProviderName;
+}
+
 export interface Evidence {
   source: string;
   quote: string;
@@ -234,7 +246,7 @@ export interface Health {
   version: string;
   ai: {
     mode: "auto" | ProviderName;
-    chain: { name: ProviderName; model: string; available: boolean }[];
+    chain: ProviderStatus[];
   };
   embeddings: { chain: string[]; active: string };
 }

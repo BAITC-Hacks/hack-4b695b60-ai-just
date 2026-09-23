@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
   ArrowRight,
+  Check,
   CircleHelp,
   Search,
   Send,
@@ -12,6 +13,7 @@ import {
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import { useSession } from "@/lib/session";
+import { pluralize } from "@/lib/text";
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -60,18 +62,25 @@ export function Catalog() {
         Находите вызовы, применяйте знания и создавайте то, что нужно бизнесу.
       </PageHeading>
       <div className="catalog-hero">
-        <div>
+        <div className="catalog-hero-copy">
           <span className="eyebrow">ОТКРЫТЫЙ КАТАЛОГ</span>
-          <h2>
-            Ваш следующий проект
-            <br />
-            начинается здесь.
-          </h2>
+          <h2>Ваш следующий проект начинается здесь.</h2>
           <p>
             Любая команда может откликнуться на любую задачу.
             <br />
             Рейтинг показывает готовность, а не ограничивает выбор.
           </p>
+          <div className="hero-benefits" aria-label="Принципы каталога">
+            <span>
+              <Check size={14} /> Все задачи открыты
+            </span>
+            <span>
+              <Check size={14} /> Рейтинг объясним
+            </span>
+            <span>
+              <Check size={14} /> Решение принимает человек
+            </span>
+          </div>
         </div>
         <div className="hero-art" aria-hidden="true">
           <div className="hero-card c1">
@@ -127,6 +136,8 @@ export function Catalog() {
       </div>
       <div className="level-filters">
         <button
+          type="button"
+          aria-pressed={!levels.length}
           className={!levels.length ? "active" : ""}
           onClick={() => {
             setLevels([]);
@@ -137,6 +148,7 @@ export function Catalog() {
         </button>
         {meta.levels.map((l) => (
           <button
+            type="button"
             aria-pressed={levels.includes(l.key)}
             className={levels.includes(l.key) ? "active" : ""}
             key={l.key}
@@ -152,7 +164,11 @@ export function Catalog() {
             {l.label}
           </button>
         ))}
-        <span>{query.data ? `${query.data.total} задач` : ""}</span>
+        <span>
+          {query.data
+            ? `${query.data.total} ${pluralize(query.data.total, "задача", "задачи", "задач")}`
+            : ""}
+        </span>
       </div>
       {query.isPending ? (
         <Loading />
@@ -319,8 +335,9 @@ export function PublicTask() {
           </Button>
         }
       >
-        {t.proposals_count} откликов · Все опубликованные поля подтверждены
-        бизнесом
+        {t.proposals_count}{" "}
+        {pluralize(t.proposals_count, "отклик", "отклика", "откликов")} · Все
+        опубликованные поля подтверждены бизнесом
       </PageHeading>
       <div className="builder-layout">
         <div className="panel">

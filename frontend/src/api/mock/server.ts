@@ -238,7 +238,13 @@ export async function mockRequest(
       fail(
         "В демо доступен только офлайн-провайдер. Подключите backend для реального AI.",
       );
-    result = { mode: "stub", chain: ["stub"], active: "stub" };
+    result = {
+      mode: "stub",
+      chain: [
+        { name: "stub", model: "frontend-demo-fixture", available: true },
+      ],
+      active: "stub",
+    };
   } else if (p === "/ai/traces")
     result = state.traces.filter(
       (t) => t.task_id === Number(query.get("task_id")),

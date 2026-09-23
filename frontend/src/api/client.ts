@@ -8,6 +8,7 @@ import type {
   Milestone,
   Proposal,
   ProviderName,
+  ProviderState,
   PublicTask,
   Recommendation,
   ScoreEvent,
@@ -87,11 +88,7 @@ export const api = {
   businesses: () => request<Business[]>("/businesses"),
   teams: () => request<Team[]>("/teams"),
   provider: (mode: "auto" | ProviderName) =>
-    request<{ mode: string; chain: string[]; active: string }>(
-      "/ai/provider",
-      "PUT",
-      { mode },
-    ),
+    request<ProviderState>("/ai/provider", "PUT", { mode }),
   reset: () => request<{ ok: true }>("/admin/reset", "POST"),
   create: (business_id: number, draft_text: string, topic: string) =>
     request<TaskDetail>("/tasks", "POST", {
