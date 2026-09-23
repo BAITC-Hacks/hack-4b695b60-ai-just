@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from app.ai.grounding import check_suggestion
-from app.ai.service import get_ai_service, set_provider_mode
+from app.ai.service import PROMPT_VERSION, get_ai_service, set_provider_mode
 from app.ai.trace import pending_trace
 
 DATASET = Path(__file__).with_name("dataset.jsonl")
@@ -26,7 +26,7 @@ def _ratio(numerator: int, denominator: int) -> float:
 def evaluate(provider: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     set_provider_mode(provider)
     true_positive = false_positive = false_negative = 0
-    questions_ok = hallucinations = rejected = proposed = 0
+    questions_ok = guard_failures = rejected = proposed = 0
     first_try = repaired = injection_ok = injection_count = 0
     latencies: list[float] = []
     provider_counts: dict[str, int] = {}
@@ -45,7 +45,7 @@ def evaluate(provider: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
             len(result.questions) >= 3
             and len({item.field for item in result.questions}) == len(result.questions)
         )
-        hallucinations += sum(
+        guard_failures += sum(
             check_suggestion(field, {"draft": row["draft"]}) is not None for field in result.fields
         )
         traces = [pending_trace(identifier) for identifier in meta.trace_ids]
@@ -67,6 +67,7 @@ def evaluate(provider: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
     p95_index = min(len(ordered) - 1, max(0, int(len(ordered) * 0.95 + 0.9999) - 1))
     return {
         "requested_provider": provider,
+        "prompt_version": PROMPT_VERSION,
         "cases": len(rows),
         "provider_used": provider_counts,
         "schema_valid_first_try": _ratio(first_try, len(rows)),
@@ -75,7 +76,8 @@ def evaluate(provider: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
         "field_recall": recall,
         "field_f1": round(2 * precision * recall / (precision + recall), 4) if precision + recall else 0.0,
         "grounding_reject_rate": _ratio(rejected, proposed),
-        "final_hallucination_rate": _ratio(hallucinations, proposed),
+        "final_guard_failure_rate": _ratio(guard_failures, proposed),
+        "semantic_hallucination_rate": None,
         "questions_ok_rate": _ratio(questions_ok, len(rows)),
         "injection_resisted": _ratio(injection_ok, injection_count),
         "latency_p50_ms": round(statistics.median(latencies), 1),
@@ -100,10 +102,14 @@ def main() -> None:
         "# Качество AI на синтетических черновиках",
         "",
         "Если ключ недоступен, результат относится к fallback-провайдеру из `provider_used`.",
+        f"Версия промпта: `{PROMPT_VERSION}`. Field F1 проверяет наличие типов полей, не смысл текста.",
+        "Final guard failures повторяет программную проверку уже отфильтрованных полей; "
+        "это не независимая оценка смысловой достоверности. Семантическая оценка не проводилась.",
+        "Вопросы ≥3 проверяет количество и уникальность полей, а не уместность формулировок.",
         "Стоимость не указана, если провайдер не сообщил расход токенов.",
         "",
         "| Запрошен | Реально ответил | Precision | Recall | F1 | Guard reject | "
-        "Final hallucinations | Вопросы ≥3 | P95, мс |",
+        "Final guard failures | Вопросы ≥3 | P95, мс |",
         "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for report in reports:
@@ -111,7 +117,7 @@ def main() -> None:
         table.append(
             f"| {report['requested_provider']} | {used} | {report['field_precision']} | "
             f"{report['field_recall']} | {report['field_f1']} | {report['grounding_reject_rate']} | "
-            f"{report['final_hallucination_rate']} | {report['questions_ok_rate']} | "
+            f"{report['final_guard_failure_rate']} | {report['questions_ok_rate']} | "
             f"{report['latency_p95_ms']} |"
         )
     (args.out / "latest.md").write_text("\n".join(table) + "\n", encoding="utf-8")

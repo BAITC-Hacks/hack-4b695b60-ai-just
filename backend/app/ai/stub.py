@@ -14,7 +14,7 @@ from app.ai.contracts import (
     FieldSuggestion,
     QAPair,
 )
-from app.ai.grounding import factual_text
+from app.ai.grounding import USER_ROLE_RE, factual_text
 from app.ai.question_bank import select_questions
 from app.config import get_settings
 from app.domain.fields import SCORED_FIELD_KEYS, TOPIC_KEYS, FieldKey
@@ -81,30 +81,6 @@ _CLAUSE_RULES: tuple[tuple[FieldKey, re.Pattern[str]], ...] = (
 
 _SECONDARY_ANSWER_FIELDS: frozenset[str] = frozenset({"constraints", "interaction_format"})
 
-_USER_LABELS: tuple[tuple[str, str], ...] = (
-    ("клиент", "Клиенты"),
-    ("покупател", "Покупатели"),
-    ("пользовател", "Пользователи"),
-    ("сотрудник", "Сотрудники"),
-    ("оператор", "Операторы"),
-    ("менеджер", "Менеджеры"),
-    ("администратор", "Администраторы"),
-    ("студент", "Студенты"),
-    ("школьник", "Школьники"),
-    ("ученик", "Ученики"),
-    ("учител", "Учителя"),
-    ("преподавател", "Преподаватели"),
-    ("куратор", "Кураторы"),
-    ("врач", "Врачи"),
-    ("пациент", "Пациенты"),
-    ("агроном", "Агрономы"),
-    ("фермер", "Фермеры"),
-    ("водител", "Водители"),
-    ("курьер", "Курьеры"),
-    ("закупщик", "Закупщики"),
-)
-_USER_WORD_RE = re.compile(r"\b(" + "|".join(stem for stem, _ in _USER_LABELS) + r")\w*", re.IGNORECASE)
-
 _TOPIC_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("logistics", re.compile(r"\b(?:логист\w*|доставк\w*|склад\w*|курьер\w*|груз\w*|маршрут\w*)\b")),
     ("retail", re.compile(r"\b(?:магазин\w*|ритейл\w*|покупател\w*|касс[аеыу]|товар\w*)\b")),
@@ -165,34 +141,26 @@ def _title(text: str) -> str | None:
         return None
     title = _quote(sentences[0])
     if len(title) > TITLE_MAX:
-        title = title[:TITLE_MAX].rsplit(" ", 1)[0]
+        return None
     return title or None
 
 
 def _users(text: str) -> FieldSuggestion | None:
-    labels: list[str] = []
-    quotes: list[str] = []
-    for match in _USER_WORD_RE.finditer(text):
-        stem = match.group(1).lower()
-        label = next(label for prefix, label in _USER_LABELS if prefix == stem)
-        if label not in labels:
-            labels.append(label)
-            quotes.append(match.group(0))
-    if not labels:
+    quotes = [_quote(clause) for clause in _clauses(text) if USER_ROLE_RE.search(clause)]
+    if not quotes:
         return None
-    labels = labels[:3]
-    value = ", ".join([labels[0]] + [label.lower() for label in labels[1:]])
-    evidence = [EvidenceOut(source="draft", quote=quote) for quote in quotes[:3]]
+    value = _compose(quotes)
+    evidence = [EvidenceOut(source="draft", quote=quote) for quote in quotes]
     return FieldSuggestion(field="users", value=value, evidence=evidence)
 
 
 def _contacts(text: str, source: str) -> FieldSuggestion | None:
-    matches = [match.group(0).rstrip(".,;") for match in CONTACT_RE.finditer(text)]
+    matches = [_quote(clause) for clause in _clauses(text) if CONTACT_RE.search(clause)]
     if not matches:
         return None
     return FieldSuggestion(
         field="contact",
-        value=", ".join(matches),
+        value=_compose(matches),
         evidence=[EvidenceOut(source=source, quote=match) for match in matches],
     )
 

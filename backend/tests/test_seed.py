@@ -41,7 +41,10 @@ def test_seed_drafts_have_questions(client):
             questions = session.exec(select(Question).where(Question.task_id == task.id)).all()
             assert 3 <= len(questions) <= 5
             assert [q.key for q in questions] == [f"q{i}" for i in range(1, len(questions) + 1)]
-            assert task.card["title"]["status"] == "suggested"
+            # AI may omit a long title rather than truncate meaningful qualifiers.
+            # Seed drafts must still wait for human confirmation before earning points.
+            assert task.score == 0
+            assert all(field["status"] != "confirmed" for field in task.card.values())
 
 
 def test_confirmed_milestone_gives_team_points(client):

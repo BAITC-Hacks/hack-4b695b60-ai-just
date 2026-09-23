@@ -3,7 +3,15 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PlainSerializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    PlainSerializer,
+    StringConstraints,
+    field_validator,
+)
 
 from app.ai.service import ProviderStatus
 from app.domain.fields import TOPIC_KEYS, CriterionKey, FieldKey, LevelKey
@@ -11,6 +19,7 @@ from app.domain.rating import Level, Rating
 
 TaskStatus = Literal["clarifying", "review", "published"]
 FieldStatus = Literal["empty", "suggested", "confirmed"]
+TrimmedText = Annotated[str, StringConstraints(strip_whitespace=True)]
 
 
 def _utc_iso(moment: datetime) -> str:
@@ -36,7 +45,7 @@ class BusinessOut(OrmModel):
 
 
 class BusinessCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=120)
+    name: TrimmedText = Field(min_length=2, max_length=120)
     industry: str | None = Field(default=None, max_length=60)
 
 
@@ -179,7 +188,7 @@ class ScoreEventOut(OrmModel):
 
 class TaskCreate(BaseModel):
     business_id: int
-    draft_text: str = Field(min_length=10, max_length=4000)
+    draft_text: TrimmedText = Field(min_length=10, max_length=4000)
     topic: str | None = None
 
     @field_validator("topic")
@@ -276,9 +285,9 @@ class ProposalOut(BaseModel):
 
 class ProposalCreate(BaseModel):
     team_id: int
-    idea: str = Field(min_length=20, max_length=3000)
-    plan: str = Field(min_length=20, max_length=3000)
-    timeline: str = Field(min_length=1, max_length=200)
+    idea: TrimmedText = Field(min_length=20, max_length=3000)
+    plan: TrimmedText = Field(min_length=20, max_length=3000)
+    timeline: TrimmedText = Field(min_length=1, max_length=200)
     prototype_url: HttpUrl | None = None
 
 
@@ -290,7 +299,7 @@ class DecisionIn(BaseModel):
 
 class MilestoneCreate(BaseModel):
     business_id: int
-    title: str = Field(min_length=3, max_length=200)
+    title: TrimmedText = Field(min_length=3, max_length=200)
     points: int = Field(default=10, ge=5, le=30)
 
 

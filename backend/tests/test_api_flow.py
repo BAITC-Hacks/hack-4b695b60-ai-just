@@ -32,7 +32,7 @@ def test_full_builder_flow(client):
     task_id = task["id"]
     assert task["status"] == "clarifying"
     assert task["rating"]["score"] == 0
-    assert task["rating"]["potential_score"] == 27
+    assert task["rating"]["potential_score"] == 31
     assert task["card"]["need"]["status"] == "suggested"
     assert task["card"]["need"]["evidence"][0]["source"] == "draft"
     assert 3 <= len(task["questions"]) <= 5
@@ -42,8 +42,8 @@ def test_full_builder_flow(client):
     assert task["ai"]["provider_used"] == "stub"
 
     step1 = client.post(f"/api/tasks/{task_id}/confirm-all").json()
-    assert step1["rating"]["score"] == 27
-    assert step1["rating"]["delta"] == 27
+    assert step1["rating"]["score"] == 31
+    assert step1["rating"]["delta"] == 31
     assert step1["status"] == "review"
     need_before = step1["card"]["need"]["value"]
 
@@ -52,16 +52,16 @@ def test_full_builder_flow(client):
     assert step2["card"]["data"]["status"] == "suggested"
     assert step2["card"]["data"]["evidence"][0]["source"].startswith("answer:")
     assert step2["card"]["need"]["value"] == need_before
-    assert step2["rating"]["score"] == 27
+    assert step2["rating"]["score"] == 31
     assert step2["rating"]["potential_score"] > 70
 
     step3 = client.post(f"/api/tasks/{task_id}/confirm-all").json()
     assert step3["rating"]["level"]["key"] == "ready"
-    assert step3["rating"]["delta"] == step3["rating"]["score"] - 27
+    assert step3["rating"]["delta"] == step3["rating"]["score"] - 31
 
     more = client.post(f"/api/tasks/{task_id}/clarify").json()
     new_round = [q for q in more["questions"] if q["round"] == 2]
-    assert [q["field"] for q in new_round] == ["interaction_format", "need", "users"]
+    assert [q["field"] for q in new_round] == ["interaction_format", "need"]
     assert new_round[0]["id"] == f"q{len(step1['questions']) + 1}"
 
     patched = client.patch(
@@ -92,7 +92,7 @@ def test_full_builder_flow(client):
     assert published["published_at"].endswith("Z")
 
     history = client.get(f"/api/tasks/{task_id}/history").json()
-    assert [event["score"] for event in history][:2] == [0, 27]
+    assert [event["score"] for event in history][:2] == [0, 31]
     assert history[-1]["reason"] == "Задача опубликована в каталоге"
 
     mine = client.get("/api/tasks", params={"business_id": business_id(client)}).json()
@@ -115,7 +115,7 @@ def test_clearing_confirmed_field(client):
     client.post(f"/api/tasks/{task_id}/confirm-all")
     cleared = client.patch(f"/api/tasks/{task_id}/card", json={"fields": {"users": {"value": None}}}).json()
     assert cleared["card"]["users"]["status"] == "empty"
-    assert cleared["rating"]["delta"] == -6
+    assert cleared["rating"]["delta"] == -10
 
 
 def test_errors(client):

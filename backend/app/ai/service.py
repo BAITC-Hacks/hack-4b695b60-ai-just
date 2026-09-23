@@ -19,7 +19,7 @@ from app.config import Settings, get_settings
 from app.domain.fields import SCORED_FIELD_KEYS, TOPIC_KEYS
 
 PROMPT_DIR = Path(__file__).parent / "prompts"
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 _mode_override: str | None = None
 _unavailable_until: dict[str, float] = {}
 
@@ -182,15 +182,10 @@ class RoutedAIService:
         chain = _configured_chain(settings)
         first = chain[0]
         trace_ids: list[int] = []
-        source_keys = list(sources)
-        masked_sources, redaction = redact_texts([sources[key] for key in source_keys])
-        masked_source_map = dict(zip(source_keys, masked_sources, strict=True))
-        masked_payload = json.loads(json.dumps(payload, ensure_ascii=False))
-        masked_payload["draft"] = masked_source_map["draft"]
-        if "answers" in masked_payload:
-            for answer in masked_payload["answers"]:
-                answer["answer"] = masked_source_map[f"answer:{answer['question_id']}"]
-        input_redacted = json.dumps(masked_payload, ensure_ascii=False)
+        # Questions can echo contacts restored after the preceding AI response.
+        # Redact the entire input, including those questions, with one mapping.
+        masked_inputs, redaction = redact_texts([json.dumps(payload, ensure_ascii=False)])
+        input_redacted = masked_inputs[0]
 
         for name in chain:
             if name == "stub":
