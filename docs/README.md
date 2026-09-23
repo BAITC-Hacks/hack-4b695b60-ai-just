@@ -12,6 +12,7 @@
 | [demo-script.md](demo-script.md) | Сценарий демо на 5 минут, готовые тексты, запасные планы, ответы жюри | Обоим, B ведёт |
 | [team/A-backend-ml.md](team/A-backend-ml.md) | Роль A: backend и ML через Cursor и Codex, промпты по фазам | A |
 | [team/B-frontend-product.md](team/B-frontend-product.md) | Роль B: frontend, UX геймификации, демо, промпты по фазам | B |
+| [team/B-ui-polish.md](team/B-ui-polish.md) | ТЗ на полировку интерфейса: темы, языки RU/KZ/EN, анимации, чек-лист качества | B |
 
 **Порядок чтения для A:** hackathon-brief → plan-5h → team/A-backend-ml → architecture → api-contract → rating-and-gamification → ai-ml → nvidia-brev.
 
