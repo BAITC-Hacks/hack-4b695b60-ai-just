@@ -2,8 +2,29 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="AI Sana Challenge Hub — площадка, где бизнес превращает идеи в понятные задачи, а студенческие команды находят проекты для реальной практики."
+    />
+    <script>
+      (() => {
+        let theme = "system";
+        try {
+          const saved = localStorage.getItem("sana-theme");
+          if (saved === "light" || saved === "dark" || saved === "system") {
+            theme = saved;
+          }
+        } catch {}
+        const dark =
+          typeof matchMedia === "function" &&
+          matchMedia("(prefers-color-scheme: dark)").matches;
+        const resolved = theme === "system" ? (dark ? "dark" : "light") : theme;
+        document.documentElement.dataset.theme = resolved;
+        document.documentElement.style.colorScheme = resolved;
+      })();
+    </script>
     <title>AI Sana — Challenge Hub</title>
   </head>
   <body>

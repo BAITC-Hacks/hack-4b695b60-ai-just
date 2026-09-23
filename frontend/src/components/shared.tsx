@@ -126,6 +126,12 @@ export function TaskTile({ task }: { task: CatalogItem }) {
           <small>/100</small>
         </span>
       </div>
+      <div
+        className={`tile-readiness score-${task.level.key}`}
+        aria-hidden="true"
+      >
+        <span style={{ width: `${task.score}%` }} />
+      </div>
       <div className="row between tile-bottom">
         <span>
           {task.proposals_count} {proposalsLabel}

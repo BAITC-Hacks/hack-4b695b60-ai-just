@@ -7,6 +7,7 @@ import { api } from "@/api/client";
 import type { Proposal } from "@/api/types";
 import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
+import "@/brand-polish.css";
 import {
   Empty,
   ErrorState,
@@ -47,33 +48,45 @@ export function MyTasks() {
       ) : query.isError ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
       ) : query.data.length ? (
-        <div className="my-task-list">
+        <ul className="my-task-list workspace-tasks" aria-label="Ваши задачи">
           {query.data.map((t) => (
-            <div className="my-task-row" key={t.id}>
-              <span className={`mini-score score-${t.level.key}`}>
-                {t.score}
-              </span>
-              <div className="grow">
+            <li className="my-task-row" key={t.id}>
+              <div className="task-readiness">
+                <span
+                  className={`mini-score score-${t.level.key}`}
+                  aria-label={`Готовность: ${t.score} из 100`}
+                >
+                  {t.score}
+                </span>
+                <span className="task-readiness-label">готовность</span>
+              </div>
+              <div className="my-task-content">
                 <Link className="task-title-link" to={`/builder/${t.id}`}>
                   {t.title || "Новая задача"}
                 </Link>
-                <p className="muted">
-                  {t.status === "published"
-                    ? "Опубликована"
-                    : t.status === "review"
-                      ? "На проверке"
-                      : "Уточнение"}{" "}
-                  · <LevelBadge level={t.level} />
-                </p>
+                <div className="my-task-meta">
+                  <span className={`my-task-status status-${t.status}`}>
+                    <span aria-hidden="true" />
+                    {t.status === "published"
+                      ? "Опубликована"
+                      : t.status === "review"
+                        ? "На проверке"
+                        : "Уточнение"}
+                  </span>
+                  <span className="my-task-level">
+                    <span>Уровень</span>
+                    <LevelBadge level={t.level} />
+                  </span>
+                </div>
               </div>
-              <Button variant="secondary" asChild>
+              <Button className="my-task-action" variant="secondary" asChild>
                 <Link to={`/tasks/${t.id}/proposals`}>
                   Отклики ({t.proposals_count})<ArrowRight size={15} />
                 </Link>
               </Button>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <Empty title="Здесь будут ваши задачи">
           <p>Начните с проблемы, которую хотите решить.</p>

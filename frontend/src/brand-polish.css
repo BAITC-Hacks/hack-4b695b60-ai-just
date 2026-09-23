@@ -1,0 +1,145 @@
+.brand-mark.sana-brand-mark {
+  display: block;
+  flex: 0 0 42px;
+  color: var(--lime-ink);
+  transform: none;
+  background: transparent;
+}
+
+.my-task-list.workspace-tasks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--radius);
+}
+
+.workspace-tasks .my-task-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 26px 28px;
+  transition: background-color 160ms ease;
+}
+
+.workspace-tasks .my-task-row:focus-within {
+  background: var(--surface);
+}
+
+.workspace-tasks .task-readiness {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.workspace-tasks .mini-score {
+  width: 54px;
+  height: 54px;
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+}
+
+.workspace-tasks .task-readiness-label {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.workspace-tasks .my-task-content {
+  min-width: 0;
+}
+
+.workspace-tasks .task-title-link {
+  display: inline-block;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.workspace-tasks .task-title-link:hover {
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.workspace-tasks .my-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin-top: 11px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.workspace-tasks .my-task-status,
+.workspace-tasks .my-task-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.workspace-tasks .my-task-status > span {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: var(--info);
+}
+
+.workspace-tasks .status-published > span {
+  background: var(--green);
+}
+
+.workspace-tasks .status-review > span {
+  background: var(--gold);
+}
+
+.workspace-tasks .my-task-level {
+  border-left: 1px solid var(--line-strong);
+  padding-left: 18px;
+}
+
+.workspace-tasks .my-task-action {
+  margin: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .workspace-tasks .my-task-row {
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 17px 18px;
+    padding: 22px 18px;
+  }
+
+  .workspace-tasks .task-title-link {
+    font-size: 14px;
+  }
+
+  .workspace-tasks .my-task-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 9px;
+  }
+
+  .workspace-tasks .my-task-level {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .workspace-tasks .my-task-action {
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-tasks .my-task-row {
+    transition: none;
+  }
+}

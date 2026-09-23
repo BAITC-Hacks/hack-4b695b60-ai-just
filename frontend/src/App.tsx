@@ -12,25 +12,32 @@ import {
 import {
   BookOpen,
   BriefcaseBusiness,
+  Check,
   ChevronDown,
   CircleHelp,
   Compass,
   FlaskConical,
   LayoutGrid,
   ListChecks,
+  Monitor,
+  Moon,
   Plus,
   RotateCcw,
   Sparkles,
+  Sun,
   Trophy,
   Users,
-  Zap,
 } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
 import { Toaster, toast } from "sonner";
 import { api, USE_MOCKS } from "./api/client";
 import type { ProviderName } from "./api/types";
 import { SessionContext } from "./lib/session";
+import { ThemeProvider, useTheme } from "./lib/theme";
 import { Button } from "./components/ui/button";
 import { Dialog } from "./components/ui/dialog";
+import { Select } from "./components/ui/select";
+import { BrandMark } from "./components/BrandMark";
 import { ErrorState, Loading } from "./components/shared";
 import { Builder } from "./features/Builder";
 import { Catalog, PublicTask, Recommendations } from "./features/Catalog";
@@ -49,6 +56,85 @@ function save(key: string, value: string) {
     /* Continue without persistent UI preferences. */
   }
 }
+const themeOptions = [
+  { value: "light", label: "Светлая", icon: Sun },
+  { value: "dark", label: "Тёмная", icon: Moon },
+  { value: "system", label: "Системная", icon: Monitor },
+] as const;
+
+function ThemePicker() {
+  const { theme, setTheme } = useTheme();
+  const selected = themeOptions.find((option) => option.value === theme)!;
+  const Icon = selected.icon;
+
+  return (
+    <div className="theme-picker">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger asChild>
+          <button
+            type="button"
+            className="theme-trigger"
+            aria-label={`Тема оформления: ${selected.label}`}
+            title={`Тема оформления: ${selected.label}`}
+          >
+            <Icon size={17} aria-hidden="true" />
+            <ChevronDown size={12} aria-hidden="true" />
+          </button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Portal>
+          <DropdownMenu.Content
+            className="theme-menu"
+            align="end"
+            sideOffset={8}
+          >
+            <DropdownMenu.Label className="theme-menu-label">
+              Тема оформления
+            </DropdownMenu.Label>
+            <DropdownMenu.RadioGroup
+              value={theme}
+              onValueChange={(value) => {
+                if (
+                  value === "light" ||
+                  value === "dark" ||
+                  value === "system"
+                ) {
+                  setTheme(value);
+                }
+              }}
+            >
+              {themeOptions.map(({ value, label, icon: OptionIcon }) => (
+                <DropdownMenu.RadioItem
+                  className="theme-option"
+                  key={value}
+                  value={value}
+                >
+                  <OptionIcon size={16} aria-hidden="true" />
+                  <span>{label}</span>
+                  <DropdownMenu.ItemIndicator className="theme-option-indicator">
+                    <Check size={15} aria-hidden="true" />
+                  </DropdownMenu.ItemIndicator>
+                </DropdownMenu.RadioItem>
+              ))}
+            </DropdownMenu.RadioGroup>
+          </DropdownMenu.Content>
+        </DropdownMenu.Portal>
+      </DropdownMenu.Root>
+    </div>
+  );
+}
+
+function ThemedToaster() {
+  const { resolvedTheme } = useTheme();
+  return (
+    <Toaster
+      theme={resolvedTheme}
+      richColors
+      position="bottom-right"
+      closeButton
+    />
+  );
+}
+
 function Shell() {
   const [role, setRole] = useState<"business" | "team">(() =>
     stored("sana-role", "business") === "team" ? "team" : "business",
@@ -161,9 +247,7 @@ function Shell() {
       <div className="app-shell">
         <aside className="sidebar">
           <Link className="brand" to="/catalog">
-            <div className="brand-mark">
-              <Zap size={22} fill="currentColor" />
-            </div>
+            <BrandMark />
             <div>
               AI Sana<span>CHALLENGE HUB</span>
             </div>
@@ -236,14 +320,21 @@ function Shell() {
                   Команда
                 </button>
               </div>
-              <select
-                aria-label={
-                  role === "business" ? "Выбор бизнеса" : "Выбор команды"
-                }
+              <Select
+                label={role === "business" ? "Выбор бизнеса" : "Выбор команды"}
                 className="identity-select"
-                value={role === "business" ? activeBusiness : activeTeam}
-                onChange={(e) => {
-                  const value = Number(e.target.value);
+                value={String(
+                  role === "business" ? activeBusiness : activeTeam,
+                )}
+                icon={
+                  role === "business" ? (
+                    <BriefcaseBusiness size={15} />
+                  ) : (
+                    <Users size={15} />
+                  )
+                }
+                onValueChange={(next) => {
+                  const value = Number(next);
                   if (role === "business") {
                     setBusinessId(value);
                     save("sana-business", String(value));
@@ -254,15 +345,11 @@ function Shell() {
                     navigate("/catalog");
                   }
                 }}
-              >
-                {(role === "business" ? businesses.data : teams.data).map(
-                  (p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ),
-                )}
-              </select>
+                options={(role === "business"
+                  ? businesses.data
+                  : teams.data
+                ).map((p) => ({ value: String(p.id), label: p.name }))}
+              />
               <button
                 className="provider-button"
                 onClick={() => setSettings(true)}
@@ -275,6 +362,7 @@ function Shell() {
                     : "AI"}
                 <ChevronDown size={12} />
               </button>
+              <ThemePicker />
             </div>
           </header>
           {USE_MOCKS && (
@@ -368,25 +456,23 @@ function Shell() {
         description="Переключение провайдера для новых запросов."
       >
         <label htmlFor="provider">AI-провайдер</label>
-        <select
+        <Select
           id="provider"
+          label="AI-провайдер"
           value={health.data?.ai.mode || "auto"}
           disabled={provider.isPending}
-          onChange={(e) =>
-            provider.mutate(e.target.value as "auto" | ProviderName)
+          onValueChange={(value) =>
+            provider.mutate(value as "auto" | ProviderName)
           }
-        >
-          <option value="auto">Автоматически</option>
-          {Object.entries(providerLabels).map(([key, label]) => (
-            <option
-              disabled={USE_MOCKS && key !== "stub"}
-              key={key}
-              value={key}
-            >
-              {label}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "auto", label: "Автоматически" },
+            ...Object.entries(providerLabels).map(([value, label]) => ({
+              value,
+              label,
+              disabled: USE_MOCKS && value !== "stub",
+            })),
+          ]}
+        />
         <p className="muted">
           {USE_MOCKS
             ? "В демонстрационном режиме AI не вызывается. Доступна локальная имитация ответов."
@@ -437,9 +523,11 @@ function Shell() {
 }
 export default function App() {
   return (
-    <BrowserRouter>
-      <Shell />
-      <Toaster richColors position="bottom-right" closeButton />
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Shell />
+        <ThemedToaster />
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

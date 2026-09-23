@@ -15,6 +15,7 @@ import { api } from "@/api/client";
 import { useSession } from "@/lib/session";
 import { pluralize } from "@/lib/text";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import {
   Empty,
   ErrorState,
@@ -107,32 +108,30 @@ export function Catalog() {
             }}
           />
         </div>
-        <select
-          aria-label="Тема"
+        <Select
+          label="Тема"
           value={topic}
-          onChange={(e) => {
-            setTopic(e.target.value);
+          onValueChange={(value) => {
+            setTopic(value);
             setPage(0);
           }}
-        >
-          <option value="">Все темы</option>
-          {meta.topics.map((t) => (
-            <option key={t.key} value={t.key}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="Сортировка"
+          options={[
+            { value: "", label: "Все темы" },
+            ...meta.topics.map((t) => ({ value: t.key, label: t.label })),
+          ]}
+        />
+        <Select
+          label="Сортировка"
           value={sort}
-          onChange={(e) => {
-            setSort(e.target.value);
+          onValueChange={(value) => {
+            setSort(value);
             setPage(0);
           }}
-        >
-          <option value="rating">По рейтингу</option>
-          <option value="newest">Сначала новые</option>
-        </select>
+          options={[
+            { value: "rating", label: "По рейтингу" },
+            { value: "newest", label: "Сначала новые" },
+          ]}
+        />
       </div>
       <div className="level-filters">
         <button

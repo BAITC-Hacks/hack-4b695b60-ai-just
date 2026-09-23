@@ -21,6 +21,7 @@ import { useSession } from "@/lib/session";
 import { pluralize } from "@/lib/text";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { Select } from "@/components/ui/select";
 import {
   ErrorState,
   LevelBadge,
@@ -164,13 +165,18 @@ function Draft() {
               });
             }}
           >
-            <div className="section-icon">
-              <FileText size={23} />
+            <div className="draft-heading">
+              <div className="section-icon">
+                <FileText size={23} />
+              </div>
+              <div>
+                <h2>Что вы хотите решить?</h2>
+                <p className="muted">
+                  Начните с пары предложений. Необязательно знать все ответы
+                  сразу.
+                </p>
+              </div>
             </div>
-            <h2>Что вы хотите решить?</h2>
-            <p className="muted">
-              Начните с пары предложений. Необязательно знать все ответы сразу.
-            </p>
             <label htmlFor="draft">Описание задачи</label>
             <textarea
               id="draft"
@@ -196,19 +202,17 @@ function Draft() {
               <small className="field-counter">{draft.length} / 4000</small>
             </div>
             <label htmlFor="topic">Тема задачи</label>
-            <select
+            <Select
               id="topic"
+              label="Тема задачи"
               value={topic}
-              onChange={(e) => setTopic(e.target.value)}
+              onValueChange={setTopic}
               disabled={create.isPending}
-            >
-              <option value="">Выберите тему · необязательно</option>
-              {meta.topics.map((t) => (
-                <option key={t.key} value={t.key}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Выберите тему · необязательно" },
+                ...meta.topics.map((t) => ({ value: t.key, label: t.label })),
+              ]}
+            />
             <div className="draft-footer">
               <span className="muted">
                 <CircleHelp size={15} /> Обычно занимает пару минут

@@ -242,12 +242,12 @@ export function RatingPanel({
                       >
                         <stop
                           offset="0%"
-                          stopColor="#287568"
+                          stopColor="var(--green)"
                           stopOpacity={0.3}
                         />
                         <stop
                           offset="100%"
-                          stopColor="#287568"
+                          stopColor="var(--green)"
                           stopOpacity={0}
                         />
                       </linearGradient>
@@ -261,7 +261,7 @@ export function RatingPanel({
                     <Area
                       type="monotone"
                       dataKey="score"
-                      stroke="#287568"
+                      stroke="var(--green)"
                       fill="url(#scoreFill)"
                       strokeWidth={2}
                     />

@@ -13,7 +13,10 @@ test("Полный сценарий: черновик → публикация �
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/builder");
   await page.getByRole("button", { name: "Попробовать пример" }).click();
-  await page.getByLabel("Тема задачи").selectOption("logistics");
+  await page
+    .getByRole("combobox", { name: "Тема задачи", exact: true })
+    .click();
+  await page.getByRole("option", { name: "Логистика", exact: true }).click();
   await page
     .getByRole("button", { name: "Проанализировать", exact: true })
     .click();
