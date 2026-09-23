@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -31,6 +31,7 @@ import { RatingPanel } from "@/components/RatingPanel";
 import { Inspector } from "./Inspector";
 const example =
   "Хотим чат-бота для клиентов, чтобы меньше звонили в колл-центр.";
+type FieldFeedback = "success" | "rejected";
 export function Builder() {
   const { id } = useParams();
   const { role, businessId } = useSession();
@@ -87,9 +88,51 @@ function Steps({ step }: { step: number }) {
     </ol>
   );
 }
+function AnalyzeProgress() {
+  const stages = ["Читаем черновик", "Ищем пробелы", "Готовим вопросы"];
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    const timers = [
+      window.setTimeout(() => setStage(1), 3000),
+      window.setTimeout(() => setStage(2), 6000),
+    ];
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+  return (
+    <div
+      className="loading ai-analysis-progress"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      data-stage={stage + 1}
+    >
+      <Sparkles className="spin" size={23} aria-hidden="true" />
+      <p>
+        <strong>{stages[stage]}</strong>
+      </p>
+      <div className="row ai-analysis-steps" aria-label="Этапы анализа">
+        {stages.map((label, index) => (
+          <span
+            className={`badge ai-analysis-step ${index < stage ? "complete" : index === stage ? "current" : "pending"}`}
+            key={label}
+          >
+            {index < stage ? <Check size={12} aria-hidden="true" /> : index + 1}
+            {label}
+          </span>
+        ))}
+      </div>
+      <progress
+        max={stages.length}
+        value={stage + 1}
+        aria-label={`Анализ черновика: шаг ${stage + 1} из ${stages.length}`}
+      />
+    </div>
+  );
+}
 function Draft() {
   const { businessId, meta } = useSession();
   const navigate = useNavigate();
+  const createLock = useRef(false);
   const [draft, setDraft] = useState("");
   const [topic, setTopic] = useState("");
   const create = useMutation({
@@ -112,7 +155,13 @@ function Draft() {
             className="panel draft-panel"
             onSubmit={(e) => {
               e.preventDefault();
-              create.mutate();
+              if (createLock.current || create.isPending) return;
+              createLock.current = true;
+              create.mutate(undefined, {
+                onSettled: () => {
+                  createLock.current = false;
+                },
+              });
             }}
           >
             <div className="section-icon">
@@ -173,7 +222,7 @@ function Draft() {
                 <ArrowRight size={16} />
               </Button>
             </div>
-            {create.isPending && <Loading label="AI читает черновик…" />}
+            {create.isPending && <AnalyzeProgress />}
             {create.isError && <ErrorState error={create.error} />}
           </form>
           <div className="trust-note">
@@ -237,6 +286,7 @@ function FieldEditor({
   placeholder,
   busy,
   patch,
+  feedback,
 }: {
   fieldKey: FieldKey;
   field: CardField;
@@ -246,7 +296,9 @@ function FieldEditor({
   patch: (
     key: FieldKey,
     change: { value?: string; confirm?: boolean; reject?: boolean },
+    feedback: FieldFeedback,
   ) => Promise<unknown>;
+  feedback?: FieldFeedback;
 }) {
   const [value, setValue] = useState(field.value || "");
   const [expanded, setExpanded] = useState(field.status !== "confirmed");
@@ -254,7 +306,8 @@ function FieldEditor({
   return (
     <section
       id={`field-section-${fieldKey}`}
-      className={`field-card field-${field.status} ${expanded ? "expanded" : "collapsed"}`}
+      className={`field-card field-${field.status} ${expanded ? "expanded" : "collapsed"} ${feedback ? `field-action-${feedback}` : ""}`}
+      data-feedback={feedback}
     >
       <div className="row between">
         <button
@@ -321,10 +374,13 @@ function FieldEditor({
           {dirty && (
             <>
               <Button
+                className="field-action-save"
                 size="sm"
                 disabled={busy}
                 onClick={() =>
-                  void patch(fieldKey, { value }).catch(() => undefined)
+                  void patch(fieldKey, { value }, "success").catch(
+                    () => undefined,
+                  )
                 }
               >
                 Сохранить
@@ -332,6 +388,7 @@ function FieldEditor({
               <Button
                 size="sm"
                 variant="ghost"
+                disabled={busy}
                 onClick={() => setValue(field.value || "")}
               >
                 Отменить
@@ -341,22 +398,28 @@ function FieldEditor({
           {field.status === "suggested" && !dirty && (
             <>
               <Button
+                className="field-action-confirm"
                 size="sm"
                 variant="secondary"
                 disabled={busy}
                 onClick={() =>
-                  void patch(fieldKey, { confirm: true }).catch(() => undefined)
+                  void patch(fieldKey, { confirm: true }, "success").catch(
+                    () => undefined,
+                  )
                 }
               >
                 <Check size={14} />
                 Подтвердить
               </Button>
               <Button
+                className="field-action-reject"
                 size="sm"
                 variant="ghost"
                 disabled={busy}
                 onClick={() =>
-                  void patch(fieldKey, { reject: true }).catch(() => undefined)
+                  void patch(fieldKey, { reject: true }, "rejected").catch(
+                    () => undefined,
+                  )
                 }
               >
                 <X size={14} />
@@ -366,6 +429,13 @@ function FieldEditor({
           )}
         </div>
       </div>
+      {feedback && (
+        <span className="sr-only" role="status">
+          {feedback === "rejected"
+            ? `${label}: предложение отклонено`
+            : `${label}: изменение сохранено`}
+        </span>
+      )}
     </section>
   );
 }
@@ -380,6 +450,19 @@ function Editor({ task }: { task: TaskDetail }) {
   const [checked, setChecked] = useState(false);
   const [success, setSuccess] = useState(false);
   const [inspector, setInspector] = useState(false);
+  const [fieldFeedback, setFieldFeedback] = useState<{
+    field: FieldKey;
+    state: FieldFeedback;
+  } | null>(null);
+  const actionLock = useRef(false);
+  const feedbackTimer = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current !== undefined)
+        window.clearTimeout(feedbackTimer.current);
+    },
+    [],
+  );
   const mutation = useMutation({
     mutationFn: (action: () => Promise<TaskDetail>) => action(),
     onSuccess: (t) => {
@@ -390,12 +473,36 @@ function Editor({ task }: { task: TaskDetail }) {
     },
     onError: (e) => toast.error(e.message),
   });
-  const act = (action: () => Promise<TaskDetail>) =>
-    mutation.mutateAsync(action);
-  const patch = (
+  const act = async (action: () => Promise<TaskDetail>) => {
+    if (actionLock.current) throw new Error("Действие уже выполняется");
+    actionLock.current = true;
+    try {
+      return await mutation.mutateAsync(action);
+    } finally {
+      actionLock.current = false;
+    }
+  };
+  const showFieldFeedback = (field: FieldKey, state: FieldFeedback) => {
+    setFieldFeedback({ field, state });
+    if (feedbackTimer.current !== undefined)
+      window.clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = window.setTimeout(() => {
+      setFieldFeedback((current) =>
+        current?.field === field && current.state === state ? null : current,
+      );
+      feedbackTimer.current = undefined;
+    }, 900);
+  };
+  const patch = async (
     field: FieldKey,
     change: { value?: string; confirm?: boolean; reject?: boolean },
-  ) => act(() => api.patch(task.id, { [field]: change }));
+    feedback: FieldFeedback,
+  ) => {
+    setFieldFeedback((current) => (current?.field === field ? null : current));
+    const result = await act(() => api.patch(task.id, { [field]: change }));
+    showFieldFeedback(field, feedback);
+    return result;
+  };
   const confirm = () => {
     void act(() => api.confirm(task.id)).catch(() => undefined);
   };
@@ -589,6 +696,11 @@ function Editor({ task }: { task: TaskDetail }) {
                       placeholder={f.placeholder}
                       busy={mutation.isPending}
                       patch={patch}
+                      feedback={
+                        fieldFeedback?.field === f.key
+                          ? fieldFeedback.state
+                          : undefined
+                      }
                     />
                   ))}
               </div>
@@ -630,6 +742,11 @@ function Editor({ task }: { task: TaskDetail }) {
                   placeholder={f.placeholder}
                   busy={mutation.isPending}
                   patch={patch}
+                  feedback={
+                    fieldFeedback?.field === f.key
+                      ? fieldFeedback.state
+                      : undefined
+                  }
                 />
               ))}
               <div className="publish-bar">

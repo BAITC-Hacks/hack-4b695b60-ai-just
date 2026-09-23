@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import {
@@ -297,6 +297,7 @@ export function PublicTask() {
   const [plan, setPlan] = useState("");
   const [timeline, setTimeline] = useState("");
   const [url, setUrl] = useState("");
+  const proposalLock = useRef(false);
   const proposal = useMutation({
     mutationFn: () =>
       api.propose(Number(id), {
@@ -314,6 +315,7 @@ export function PublicTask() {
       setUrl("");
       void cache.invalidateQueries();
     },
+    onError: (error) => toast.error(error.message),
   });
   if (task.isPending) return <Loading />;
   if (task.isError)
@@ -354,13 +356,19 @@ export function PublicTask() {
               className="proposal-form"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (proposalLock.current || proposal.isPending) return;
                 if (url && !/^https?:\/\//i.test(url.trim())) {
                   toast.error(
                     "Ссылка должна начинаться с http:// или https://",
                   );
                   return;
                 }
-                proposal.mutate();
+                proposalLock.current = true;
+                proposal.mutate(undefined, {
+                  onSettled: () => {
+                    proposalLock.current = false;
+                  },
+                });
               }}
             >
               <h2>Предложите своё решение</h2>

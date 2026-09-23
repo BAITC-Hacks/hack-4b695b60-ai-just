@@ -1,6 +1,7 @@
 import { AlertCircle, ArrowUpRight, Inbox, LoaderCircle } from "lucide-react";
 import { Link } from "react-router";
 import type { ReactNode } from "react";
+import { ApiError } from "@/api/client";
 import type { CatalogItem, Level } from "@/api/types";
 import { useSession } from "@/lib/session";
 import { pluralize } from "@/lib/text";
@@ -22,11 +23,18 @@ export function ErrorState({
   error: Error | null;
   retry?: () => void;
 }) {
+  const status = error instanceof ApiError ? error.status : undefined;
+  const title =
+    status === 0
+      ? "Сервер недоступен"
+      : status === 404
+        ? "Страница не найдена"
+        : "Не получилось загрузить данные";
   return (
     <div className="error-box" role="alert">
       <AlertCircle size={22} />
       <div className="page-heading-content">
-        <strong>Не получилось загрузить данные</strong>
+        <strong>{title}</strong>
         <p>{error?.message || "Попробуйте ещё раз."}</p>
         {retry && (
           <Button variant="secondary" onClick={retry}>

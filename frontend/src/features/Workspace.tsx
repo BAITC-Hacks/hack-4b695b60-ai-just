@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { ArrowRight, Check, Plus, Trophy } from "lucide-react";
@@ -142,6 +142,7 @@ function ProposalCard({
   const [comment, setComment] = useState(p.business_comment || "");
   const [title, setTitle] = useState("");
   const [points, setPoints] = useState(10);
+  const actionLock = useRef(false);
   const change = useMutation({
     mutationFn: (fn: () => Promise<unknown>) => fn(),
     onSuccess: () => {
@@ -149,6 +150,15 @@ function ProposalCard({
     },
     onError: (e) => toast.error(e.message),
   });
+  const runChange = (action: () => Promise<unknown>) => {
+    if (actionLock.current || change.isPending) return;
+    actionLock.current = true;
+    change.mutate(action, {
+      onSettled: () => {
+        actionLock.current = false;
+      },
+    });
+  };
   return (
     <article className="panel proposal-card">
       <div className="row between">
@@ -201,7 +211,7 @@ function ProposalCard({
             <Button
               disabled={change.isPending || p.status === "selected"}
               onClick={() =>
-                change.mutate(() =>
+                runChange(() =>
                   api
                     .decision(p.id, businessId, "selected", comment)
                     .then((r) => {
@@ -218,7 +228,7 @@ function ProposalCard({
               variant="secondary"
               disabled={change.isPending || p.status === "rejected"}
               onClick={() =>
-                change.mutate(() =>
+                runChange(() =>
                   api
                     .decision(p.id, businessId, "rejected", comment)
                     .then((r) => {
@@ -254,7 +264,7 @@ function ProposalCard({
                     variant="secondary"
                     disabled={change.isPending}
                     onClick={() =>
-                      change.mutate(() =>
+                      runChange(() =>
                         api.confirmMilestone(m.id, businessId).then((r) => {
                           toast.success(
                             `+${r.milestone.points} баллов команде ${r.team.name}`,
@@ -277,7 +287,7 @@ function ProposalCard({
               className="milestone-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                change.mutate(() =>
+                runChange(() =>
                   api
                     .milestone(p.id, businessId, title.trim(), points)
                     .then((r) => {
