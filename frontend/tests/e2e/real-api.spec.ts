@@ -143,7 +143,10 @@ test("Настоящий API: черновик → публикация → от
   ).toBeVisible();
   await page.getByRole("tab", { name: "Промпты и схемы" }).click();
   await expect(
-    page.getByText("analyze_draft", { exact: false }).first(),
+    page
+      .getByRole("tabpanel", { name: "Промпты и схемы" })
+      .getByText("analyze_draft", { exact: false })
+      .first(),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
