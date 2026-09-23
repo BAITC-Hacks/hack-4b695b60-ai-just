@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PlainSerializer, field_validator
 
 from app.ai.service import ProviderStatus
 from app.domain.fields import TOPIC_KEYS, CriterionKey, FieldKey, LevelKey
@@ -211,3 +211,114 @@ class CardPatch(BaseModel):
 
 class PublishIn(BaseModel):
     confirm: bool = False
+
+
+class CatalogItem(BaseModel):
+    id: int
+    title: str
+    topic: str | None
+    business_name: str
+    score: int
+    level: Level
+    highlighted: bool
+    needs_clarification: bool
+    need_preview: str
+    proposals_count: int
+    position: int
+    published_at: UtcDatetime
+
+
+class CatalogPage(BaseModel):
+    items: list[CatalogItem]
+    total: int
+
+
+class PublicTask(BaseModel):
+    id: int
+    title: str
+    topic: str | None
+    business_name: str
+    card: dict[FieldKey, str]
+    rating: Rating
+    position: int
+    proposals_count: int
+    published_at: UtcDatetime
+
+
+class TaskRef(BaseModel):
+    id: int
+    title: str
+
+
+class MilestoneOut(OrmModel):
+    id: int
+    proposal_id: int
+    title: str
+    points: int
+    status: Literal["pending", "confirmed"]
+    confirmed_at: UtcDatetime | None
+
+
+class ProposalOut(BaseModel):
+    id: int
+    task: TaskRef
+    team: TeamOut
+    idea: str
+    plan: str
+    timeline: str
+    prototype_url: str | None
+    status: Literal["submitted", "selected", "rejected"]
+    business_comment: str | None
+    milestones: list[MilestoneOut]
+    created_at: UtcDatetime
+    decided_at: UtcDatetime | None
+
+
+class ProposalCreate(BaseModel):
+    team_id: int
+    idea: str = Field(min_length=20, max_length=3000)
+    plan: str = Field(min_length=20, max_length=3000)
+    timeline: str = Field(min_length=1, max_length=200)
+    prototype_url: HttpUrl | None = None
+
+
+class DecisionIn(BaseModel):
+    business_id: int
+    decision: Literal["selected", "rejected"]
+    comment: str | None = Field(default=None, max_length=500)
+
+
+class MilestoneCreate(BaseModel):
+    business_id: int
+    title: str = Field(min_length=3, max_length=200)
+    points: int = Field(default=10, ge=5, le=30)
+
+
+class BusinessAction(BaseModel):
+    business_id: int
+
+
+class MilestoneConfirmOut(BaseModel):
+    milestone: MilestoneOut
+    team: TeamOut
+
+
+class TeamRank(BaseModel):
+    rank: int
+    team: TeamOut
+    confirmed_milestones: int
+
+
+class TeamLeaderboard(BaseModel):
+    items: list[TeamRank]
+
+
+class BusinessRank(BaseModel):
+    rank: int
+    business: BusinessOut
+    avg_score: float
+    published_tasks: int
+
+
+class BusinessLeaderboard(BaseModel):
+    items: list[BusinessRank]

@@ -272,7 +272,7 @@ interface CardPatch {
 | POST | `/api/proposals/{id}/milestones` | `{business_id, title, points?}` | `201 Milestone` | Этап для выбранного отклика; `points` от 5 до 30, по умолчанию 10 |
 | POST | `/api/milestones/{id}/confirm` | `{business_id}` | `{milestone: Milestone, team: Team}` | Бизнес подтверждает этап, команда получает баллы |
 | GET | `/api/leaderboard/teams` | — | `{items: {rank: number, team: Team, confirmed_milestones: number}[]}` | Рейтинг команд по баллам прогресса |
-| GET | `/api/leaderboard/businesses` | — | `{items: {rank: number, business: Business, avg_score: number, published_tasks: number}[]}` | P2: заказчики по среднему качеству задач |
+| GET | `/api/leaderboard/businesses` | — | `{items: {rank: number, business: Business, avg_score: number, published_tasks: number}[]}` | Заказчики по среднему рейтингу опубликованных задач (качество, а не известность) |
 
 Эндпоинтов, которые сами выбирают или назначают команду, **нет и не будет**.
 

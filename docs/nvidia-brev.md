@@ -7,6 +7,11 @@
 | **NVIDIA Build** (build.nvidia.com) | Hosted NIM API: модели NVIDIA по ключу, OpenAI-совместимо, без своего GPU | Второй LLM-провайдер (Nemotron 3) и основные эмбеддинги (`nemotron-3-embed-1b`) | P1 |
 | **NVIDIA Brev** (brev.nvidia.com) | Облачные GPU-инстансы (L40S, A100, H100 и другие) по кредитам, плюс Launchables — готовые окружения в один клик | Своя модель: приватный режим, в котором черновики бизнеса не уходят третьим лицам; прогон eval | P2 |
 
+> **Важно (проверено 23.09).** build.nvidia.com выдаёт API-ключ только после SMS-верификации аккаунта, а код +7 (Казахстан, Россия) в списке стран отсутствует. Это ограничение на стороне NVIDIA: официальный путь — письмо на help@build.nvidia.com, ответ приходит днями. Ключ NGC вместо него не работает. Обходить ограничение через VPN или чужие номера нельзя: это нарушает правила NVIDIA и требования безопасности хакатона («не обходить установленные ограничения»). Поэтому:
+> - **основной путь к NVIDIA — Brev**: своя модель Nemotron из открытых весов Hugging Face через vLLM, ключи NVIDIA и NGC не нужны;
+> - без `NVIDIA_API_KEY` провайдер `nvidia` помечается недоступным и пропускается; эмбеддинги берутся из OpenAI или TF-IDF;
+> - сообщить ментору и организаторам: возможно, у них есть организация NVIDIA для участников (кнопки «Switch Org» и «Contact Admin» на странице ключей).
+
 История для жюри: «У нас три уровня AI. Облачный OpenAI для качества на русском. NVIDIA Nemotron через Build API. Своя модель на GPU NVIDIA Brev для приватных данных. Всё переключается на лету, а офлайн-заглушка страхует всё остальное. Какую модель ставить первой, решили по метрикам eval».
 
 ## 1. Активация (из инструкции организаторов)
@@ -74,11 +79,12 @@ emb = client.embeddings.create(
 ### 3.2 Создание инстанса: веб-консоль (основной путь для Windows)
 
 1. brev.nvidia.com → **Create Instance** (или **New**).
-2. Режим **VM Mode**: VM с Python, CUDA и Docker. Не Container Mode.
+2. Режим **VM Mode**: VM с Python, CUDA и Docker. Не Container Mode. Включите Jupyter: в JupyterLab есть терминал прямо в браузере, и для запуска модели не придётся ставить CLI в WSL.
 3. GPU:
    - **L40S 48GB** — хватит для Nemotron 3 Nano в FP8 или для 8–9B-моделей в BF16;
    - **A100 80GB или H100 80GB** — для Nemotron 3 Nano в BF16 (веса около 60 GB);
    - смотрим цену за час и остаток кредитов.
+   - Провайдера выбираем по меткам в списке. «Flexible ports» означает, что порт можно открыть из консоли без CLI. «No stop/start» означает, что инстанс нельзя поставить на паузу, только удалить. На 23.09 для L40S × 1 было так: Crusoe $1.74/ч (flexible ports, stop/start, 147 GB RAM) — рекомендуем; MassedCompute $1.06/ч (дешевле, но no stop/start и fixed ports); Nebius $1.86/ч (всего 32 GB RAM).
 4. Имя: `challenge-hub-llm` → **Deploy**. Подготовка занимает несколько минут.
 5. Во вкладке **Access** будут способы подключения: браузерный терминал, SSH, туннели.
 
@@ -114,14 +120,17 @@ docker run -d --name nemotron --gpus all --ipc=host -p 8000:8000 \
   --model nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8 \
   --served-model-name nemotron-3-nano \
   --max-model-len 32768 \
+  --max-num-seqs 8 \
+  --kv-cache-dtype fp8 \
   --trust-remote-code \
   --api-key "$BREV_LLM_API_KEY"
 docker logs -f nemotron        # ждём "Application startup complete"
 curl -s localhost:8000/v1/models -H "Authorization: Bearer $BREV_LLM_API_KEY"
 ```
 
+- Репозиторий `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-FP8` проверен: он открыт (NVIDIA Nemotron Open Model License), нужен vLLM ≥ 0.12. В карточке модели есть переменная `VLLM_USE_FLASHINFER_MOE_FP8=1`, но её проверяли на H100 и B200. На L40S запускаем без неё.
 - На A100 или H100 80GB можно брать BF16: `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16`.
-- Точное имя репозитория сверить на huggingface.co/nvidia. Если модель не влезает или не стартует, берём модель поменьше (8–9B), это та же команда с другим `--model`.
+- Если модель не влезает или не стартует, берём модель поменьше (8–9B): та же команда с другим `--model`.
 - Рассуждение отключаем в запросе: `extra_body={"chat_template_kwargs": {"enable_thinking": False}}`. JSON-режим: `response_format={"type": "json_schema", ...}`.
 - Скрипт с этой командой — `infra/brev/serve_vllm.sh`.
 

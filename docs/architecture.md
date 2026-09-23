@@ -83,7 +83,7 @@ flowchart LR
 │   │   ├── errors.py         # доменные ошибки {"detail": {"code", "message"}}
 │   │   ├── seed.py           # загрузка data/seed, пересчёт рейтингов
 │   │   ├── api/              # роутеры: meta, participants, tasks, catalog, proposals, leaderboard, admin | ai, recommendations (зона A2)
-│   │   ├── services/         # сценарии задачи поверх domain/ и AIService: создание, ответы, пересчёт
+│   │   ├── services/         # task_service, task_views, catalog_views, proposal_service: сценарии поверх domain/ и AIService
 │   │   ├── domain/           # fields.py, rating.py, card.py, catalog.py — чистые функции
 │   │   ├── ai/               # зона A2: contracts.py, router.py, providers/, prompts/, clarify.py, card_builder.py, grounding.py, pii.py, stub.py, question_bank.py, trace.py
 │   │   └── ml/               # зона A2: embeddings.py, recommend.py, similarity.py
