@@ -268,7 +268,7 @@ EMBED_PROVIDER_CHAIN=openai,tfidf
 | Режим | Как | Когда |
 | --- | --- | --- |
 | Разработка | backend `:8000` (`uv run uvicorn app.main:app --reload`) + frontend `:5173` (`npm run dev`, proxy `/api`) | Основной |
-| Docker | `docker compose up --build` | Для жюри и финальной проверки |
+| Docker | `docker compose up --build`: интерфейс на `:8080` (nginx проксирует `/api` в backend), API на `:8000` | Для жюри и финальной проверки |
 | Офлайн | `AI_PROVIDER=stub`, `EMBED_PROVIDER_CHAIN=tfidf` | Нет сети или ключей, страховка на демо |
 | Приватный | `AI_PROVIDER=brev`: своя модель на GPU NVIDIA Brev | Показать, что черновики не уходят третьим лицам |
 

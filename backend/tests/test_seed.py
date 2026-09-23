@@ -1,7 +1,19 @@
+import json
+
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.db import engine
 from app.models import Milestone, Proposal, Question, Task, Team
+
+
+def test_seed_declared_readiness_matches_engine(client):
+    cards = json.loads((get_settings().seed_dir / "cards.json").read_text(encoding="utf-8"))
+    declared = {card["card"]["title"]: (card["readiness_score"], card["expected_level"]) for card in cards}
+    with Session(engine) as session:
+        published = session.exec(select(Task).where(Task.status == "published")).all()
+        actual = {task.card["title"]["value"]: (task.score, task.level) for task in published}
+    assert actual == declared
 
 
 def test_seed_volumes(client):

@@ -1,6 +1,7 @@
 [
   {
     "key": "zhibek_demand",
+    "readiness_score": 94,
     "business": "zhibek",
     "topic": "retail",
     "published_days_ago": 6,
@@ -21,6 +22,7 @@
   },
   {
     "key": "agronur_disease",
+    "readiness_score": 87,
     "business": "agronur",
     "topic": "agro",
     "published_days_ago": 5,
@@ -40,6 +42,7 @@
   },
   {
     "key": "medisa_reminders",
+    "readiness_score": 86,
     "business": "medisa",
     "topic": "healthcare",
     "published_days_ago": 4,
@@ -60,6 +63,7 @@
   },
   {
     "key": "altyn_documents",
+    "readiness_score": 64,
     "business": "altyn",
     "topic": "finance",
     "published_days_ago": 3,
@@ -78,6 +82,7 @@
   },
   {
     "key": "qazedu_dashboard",
+    "readiness_score": 55,
     "business": "qazedu",
     "topic": "education",
     "published_days_ago": 2,
@@ -96,6 +101,7 @@
   },
   {
     "key": "dala_routes",
+    "readiness_score": 27,
     "business": "dala",
     "topic": "logistics",
     "published_days_ago": 1,
