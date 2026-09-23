@@ -4,7 +4,7 @@
 
 Хакатон HackAlem AI, трек AI Sana, кейс «Единый кейс по геймификации практических заданий». Владелец задачи — МНВО, AI Sana.
 
-> **Статус: подготовка.** Сейчас в репозитории документация и план, код пишется во время хакатона. Всё ниже — целевое поведение MVP. Перед сдачей README пересобирается по фактическому коду (`docs/hackathon-brief.md`, раздел 12), а таблица статуса обновляется.
+> **Статус: в разработке.** Backend сквозного сценария готов и покрыт тестами. AI-провайдеры и frontend в работе. Перед сдачей README пересобирается по фактическому коду (`docs/hackathon-brief.md`, раздел 12).
 
 ## Проблема и для кого
 
@@ -37,12 +37,15 @@ flowchart LR
 | Возможность | Статус |
 | --- | --- |
 | Документация, архитектура, API-контракт, план | Готово |
-| Конструктор задачи (черновик, вопросы, карточка) | План |
-| Рейтинг 0–100 с расшифровкой, уровнями и подсказками | План |
-| Каталог с сортировкой по рейтингу и фильтрами | План |
-| Отклики команд, ручной выбор бизнеса, этапы и лидерборд | План |
-| AI: OpenAI и NVIDIA Nemotron, grounding-guard, офлайн-заглушка | План |
-| AI Inspector, рекомендации, eval, своя модель на NVIDIA Brev | План (P1/P2) |
+| Backend: конструктор задачи (черновик, вопросы, карточка, подтверждение, публикация) | Готово, API |
+| Backend: рейтинг 0–100 с расшифровкой, уровнями, подсказками, историей и ачивками | Готово, API |
+| Backend: каталог с сортировкой по рейтингу, фильтрами и позицией | Готово, API |
+| Backend: отклики, ручной выбор бизнеса, этапы, лидерборды команд и заказчиков | Готово, API |
+| AI: офлайн-заглушка (правила и банк вопросов) | Готово |
+| AI: OpenAI и NVIDIA Nemotron, grounding-guard, маскирование PII, AI Inspector | В работе |
+| Рекомендации, eval, своя модель на NVIDIA Brev | В работе |
+| Frontend | В работе |
+| Docker Compose (backend) | Готово |
 
 ## Формула рейтинга
 
@@ -105,22 +108,26 @@ flowchart LR
 
 Подробно: [docs/architecture.md](docs/architecture.md), контракт API — [docs/api-contract.md](docs/api-contract.md).
 
-## Установка и запуск (целевые команды, проверяются по мере реализации)
+## Установка и запуск
 
-Ключи не обязательны: без них работают офлайн-заглушка и TF-IDF.
+Ключи не обязательны: без них работают офлайн-заглушка и TF-IDF. При первом запуске БД SQLite создаётся и заполняется демо-данными сама.
 
 ```powershell
 git clone https://github.com/BAITC-Hacks/hack-4b695b60-ai-just.git
 cd hack-4b695b60-ai-just
-copy .env.example .env          # по желанию: OPENAI_API_KEY, NVIDIA_API_KEY
+copy .env.example .env          # по желанию: OPENAI_API_KEY, NVIDIA_API_KEY, BREV_LLM_*
 
-# вариант 1: одной командой
-docker compose up --build       # frontend http://localhost:5173, API http://localhost:8000/docs
+# вариант 1: Docker
+docker compose up --build       # API и документация: http://localhost:8000/docs
 
-# вариант 2: вручную
-cd backend; uv sync; uv run uvicorn app.main:app --port 8000
-cd frontend; npm install; npm run dev
+# вариант 2: вручную (Python 3.11 и uv)
+cd backend
+uv sync
+uv run uvicorn app.main:app --port 8000
+uv run pytest                   # тесты
 ```
+
+Frontend (`frontend/`, `npm install; npm run dev`, http://localhost:5173) появится в репозитории по мере готовности. Если backend в Docker, а своя модель на Brev проброшена на порт хоста, то `BREV_LLM_BASE_URL=http://host.docker.internal:8001/v1`.
 
 ## Как проверить (тестовые сценарии)
 
