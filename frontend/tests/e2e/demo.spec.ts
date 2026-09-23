@@ -87,6 +87,15 @@ test("Полный сценарий: черновик → публикация �
     page.getByText("Рекомендации не ограничивают каталог."),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Смотреть все задачи →", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Задачи с реальным смыслом",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
     .getByRole("link")
     .filter({
       has: page.getByRole("heading", {
@@ -143,7 +152,7 @@ test("Каталог: фильтр, пустое состояние, мобил�
   await page.goto("/catalog");
   await expect(page.locator(".task-tile")).toHaveCount(6);
   await page.getByRole("button", { name: "Приоритетная", exact: true }).click();
-  await expect(page.locator(".task-tile")).toHaveCount(1);
+  await expect(page.locator(".task-tile")).toHaveCount(3);
   await page.getByRole("button", { name: "Все уровни" }).click();
   await page.getByLabel("Поиск задач").fill("несуществующая задача");
   await expect(

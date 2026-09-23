@@ -218,7 +218,7 @@ function ProposalCard({
             id={`comment-${p.id}`}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            maxLength={2000}
+            maxLength={500}
           />
           <div className="row">
             <Button
@@ -300,6 +300,7 @@ function ProposalCard({
               className="milestone-form"
               onSubmit={(e) => {
                 e.preventDefault();
+                if (title.trim().length < 3) return;
                 runChange(() =>
                   api
                     .milestone(p.id, businessId, title.trim(), points)
@@ -318,6 +319,7 @@ function ProposalCard({
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
+                  minLength={3}
                   maxLength={200}
                   placeholder="Например, прототип бота"
                 />
@@ -338,7 +340,7 @@ function ProposalCard({
               <Button
                 type="submit"
                 variant="secondary"
-                disabled={change.isPending || !title.trim()}
+                disabled={change.isPending || title.trim().length < 3}
               >
                 <Plus size={15} />
                 Добавить

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BrowserRouter,
@@ -39,9 +39,27 @@ import { Dialog } from "./components/ui/dialog";
 import { Select } from "./components/ui/select";
 import { BrandMark } from "./components/BrandMark";
 import { ErrorState, Loading } from "./components/shared";
-import { Builder } from "./features/Builder";
-import { Catalog, PublicTask, Recommendations } from "./features/Catalog";
-import { Leaderboard, MyTasks, Proposals } from "./features/Workspace";
+const Builder = lazy(() =>
+  import("./features/Builder").then((m) => ({ default: m.Builder })),
+);
+const Catalog = lazy(() =>
+  import("./features/Catalog").then((m) => ({ default: m.Catalog })),
+);
+const PublicTask = lazy(() =>
+  import("./features/Catalog").then((m) => ({ default: m.PublicTask })),
+);
+const Recommendations = lazy(() =>
+  import("./features/Catalog").then((m) => ({ default: m.Recommendations })),
+);
+const Leaderboard = lazy(() =>
+  import("./features/Workspace").then((m) => ({ default: m.Leaderboard })),
+);
+const MyTasks = lazy(() =>
+  import("./features/Workspace").then((m) => ({ default: m.MyTasks })),
+);
+const Proposals = lazy(() =>
+  import("./features/Workspace").then((m) => ({ default: m.Proposals })),
+);
 function stored(key: string, fallback: string) {
   try {
     return localStorage.getItem(key) || fallback;
@@ -377,70 +395,72 @@ function Shell() {
             id="main-content"
             key={`${role}-${activeBusiness}-${activeTeam}`}
           >
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={role === "business" ? "/builder" : "/catalog"}
-                    replace
-                  />
-                }
-              />
-              <Route path="/builder/:id?" element={<Builder />} />
-              <Route path="/catalog" element={<Catalog />} />
-              <Route path="/catalog/:id" element={<PublicTask />} />
-              <Route
-                path="/my-tasks"
-                element={
-                  role === "business" ? (
-                    <MyTasks />
-                  ) : (
-                    <Navigate to="/catalog" replace />
-                  )
-                }
-              />
-              <Route
-                path="/tasks/:id/proposals"
-                element={
-                  role === "business" ? (
-                    <Proposals business />
-                  ) : (
-                    <Navigate to="/catalog" replace />
-                  )
-                }
-              />
-              <Route
-                path="/recommendations"
-                element={
-                  role === "team" ? (
-                    <Recommendations />
-                  ) : (
-                    <Navigate to="/catalog" replace />
-                  )
-                }
-              />
-              <Route
-                path="/proposals"
-                element={
-                  role === "team" ? (
-                    <Proposals />
-                  ) : (
-                    <Navigate to="/my-tasks" replace />
-                  )
-                }
-              />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route
-                path="*"
-                element={
-                  <div className="empty">
-                    <h1>Страница не найдена</h1>
-                    <Link to="/catalog">В каталог →</Link>
-                  </div>
-                }
-              />
-            </Routes>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <Navigate
+                      to={role === "business" ? "/builder" : "/catalog"}
+                      replace
+                    />
+                  }
+                />
+                <Route path="/builder/:id?" element={<Builder />} />
+                <Route path="/catalog" element={<Catalog />} />
+                <Route path="/catalog/:id" element={<PublicTask />} />
+                <Route
+                  path="/my-tasks"
+                  element={
+                    role === "business" ? (
+                      <MyTasks />
+                    ) : (
+                      <Navigate to="/catalog" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/tasks/:id/proposals"
+                  element={
+                    role === "business" ? (
+                      <Proposals business />
+                    ) : (
+                      <Navigate to="/catalog" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/recommendations"
+                  element={
+                    role === "team" ? (
+                      <Recommendations />
+                    ) : (
+                      <Navigate to="/catalog" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/proposals"
+                  element={
+                    role === "team" ? (
+                      <Proposals />
+                    ) : (
+                      <Navigate to="/my-tasks" replace />
+                    )
+                  }
+                />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route
+                  path="*"
+                  element={
+                    <div className="empty">
+                      <h1>Страница не найдена</h1>
+                      <Link to="/catalog">В каталог →</Link>
+                    </div>
+                  }
+                />
+              </Routes>
+            </Suspense>
           </main>
           <footer>
             <span>AI Sana Challenge Hub</span>

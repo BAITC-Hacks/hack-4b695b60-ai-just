@@ -1,21 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { animate, motion, useReducedMotion } from "motion/react";
-import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { Award, Check, ChevronRight, Sparkles, TrendingUp } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { FieldKey, Rating } from "@/api/types";
 import { Button } from "./ui/button";
 import { LevelBadge } from "./shared";
+const RatingHistoryChart = lazy(() => import("./RatingHistoryChart"));
+
 export function RatingPanel({
   rating,
   taskId,
@@ -56,14 +49,19 @@ export function RatingPanel({
         .forEach((a) => toast.success(`Достижение: ${a.label}`));
       if (
         rating.level.key === "priority" &&
-        previous.current.level.key !== "priority"
+        previous.current.level.key !== "priority" &&
+        !reduceMotion
       )
-        void confetti({
-          particleCount: 85,
-          spread: 70,
-          origin: { y: 0.7 },
-          disableForReducedMotion: true,
-        });
+        void import("canvas-confetti")
+          .then(({ default: confetti }) =>
+            confetti({
+              particleCount: 85,
+              spread: 70,
+              origin: { y: 0.7 },
+              disableForReducedMotion: true,
+            }),
+          )
+          .catch(() => undefined);
     }
     previous.current = rating;
     return () => controls.stop();
@@ -229,45 +227,16 @@ export function RatingPanel({
             </button>
           ) : history.data.length ? (
             <>
-              <div className="history-chart">
-                <ResponsiveContainer width="100%" height={100}>
-                  <AreaChart data={history.data}>
-                    <defs>
-                      <linearGradient
-                        id="scoreFill"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="var(--green)"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="var(--green)"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <XAxis hide dataKey="created_at" />
-                    <YAxis hide domain={[0, 100]} />
-                    <Tooltip
-                      labelFormatter={() => "Изменение готовности"}
-                      formatter={(value) => [`${value} баллов`, "Рейтинг"]}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="score"
-                      stroke="var(--green)"
-                      fill="url(#scoreFill)"
-                      strokeWidth={2}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              <Suspense
+                fallback={
+                  <div
+                    className="history-chart"
+                    aria-label="Загружаем график…"
+                  />
+                }
+              >
+                <RatingHistoryChart history={history.data} />
+              </Suspense>
               <p className="history-numbers">
                 {history.data.map((h) => h.score).join(" → ")}
               </p>

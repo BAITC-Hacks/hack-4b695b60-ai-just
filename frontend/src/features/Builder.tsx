@@ -358,7 +358,7 @@ function FieldEditor({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          maxLength={4000}
+          maxLength={2000}
           rows={fieldKey === "title" ? 2 : 3}
           disabled={busy}
         />

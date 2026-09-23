@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const API = process.env.E2E_API_URL || "http://127.0.0.1:8000/api";
+const API = process.env.E2E_API_URL;
 const answers = {
   data: "Есть выгрузка обращений из CRM за 6 месяцев — около 12 000 записей в Excel, плюс FAQ на 40 вопросов. Данные обезличим и дадим доступ после NDA.",
   context:
@@ -13,6 +13,11 @@ const contact = "aigerim" + "@" + "example.com";
 const score = (page: Page) => page.locator(".score-ring strong");
 
 test.beforeEach(async ({ request }) => {
+  if (!API || API !== `${process.env.API_PROXY_TARGET}/api`) {
+    throw new Error(
+      "Укажите E2E_API_URL и API_PROXY_TARGET для одного отдельного тестового backend: сценарий сбрасывает его базу.",
+    );
+  }
   const reset = await request.post(`${API}/admin/reset`);
   expect(reset.ok()).toBeTruthy();
 });
@@ -39,7 +44,7 @@ test("Настоящий API: черновик → публикация → от
   await page
     .getByRole("button", { name: "Подтвердить всё", exact: true })
     .click();
-  await expect(score(page)).toHaveText("27");
+  await expect(score(page)).toHaveText("31");
 
   await page.locator("#q1").fill(answers.data);
   await page.locator("#q2").fill(answers.context);
@@ -61,6 +66,7 @@ test("Настоящий API: черновик → публикация → от
     if (!(await input.isVisible())) {
       await section.locator(".field-heading").click();
     }
+    await expect(input).toHaveAttribute("maxlength", "2000");
     await input.fill(value);
     await section
       .getByRole("button", { name: "Сохранить", exact: true })
@@ -99,6 +105,15 @@ test("Настоящий API: черновик → публикация → от
     page.getByText("Рекомендации не ограничивают каталог."),
   ).toBeVisible();
   await page
+    .getByRole("link", { name: "Смотреть все задачи →", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Задачи с реальным смыслом",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page
     .getByRole("link")
     .filter({
       has: page.getByRole("heading", {
@@ -128,8 +143,15 @@ test("Настоящий API: черновик → публикация → от
     .filter({ hasText: "Telegram-бот для ответов о статусе доставки" })
     .getByRole("link", { name: /Отклики/ })
     .click();
+  const comment = page.getByLabel("Комментарий · необязательно");
+  await expect(comment).toHaveAttribute("maxlength", "500");
+  await comment.fill("Проверили прототип. ".repeat(25));
   await page.getByRole("button", { name: "Выбрать", exact: true }).click();
   await expect(page.getByText("Выбрана", { exact: true })).toBeVisible();
+  await page.getByLabel("Название этапа").fill("  а  ");
+  await expect(
+    page.getByRole("button", { name: "Добавить", exact: true }),
+  ).toBeDisabled();
   await page.getByLabel("Название этапа").fill("Прототип бота на 40 FAQ");
   await page.getByRole("button", { name: "Добавить", exact: true }).click();
   await page.getByRole("button", { name: "Подтвердить", exact: true }).click();
