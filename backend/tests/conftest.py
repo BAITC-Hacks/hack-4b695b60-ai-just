@@ -2,7 +2,8 @@ import os
 import tempfile
 from pathlib import Path
 
-_TEST_DB = Path(tempfile.gettempdir()) / "challenge_hub_test.db"
+# Своя БД на каждый прогон: тесты из разных worktree не мешают друг другу.
+_TEST_DB = Path(tempfile.mkdtemp(prefix="challenge_hub_test_")) / "test.db"
 
 # Переменные окружения важнее .env: тесты не ходят во внешние API и не трогают рабочую БД.
 os.environ.update(

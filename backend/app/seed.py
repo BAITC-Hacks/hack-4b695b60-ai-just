@@ -6,7 +6,8 @@ from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
-from sqlmodel import Session, select
+from sqlalchemy import inspect
+from sqlmodel import Session, SQLModel, select
 
 from app.ai.stub import StubAIService
 from app.config import get_settings
@@ -124,7 +125,22 @@ def reset_and_seed() -> None:
         seed_database(session, get_settings().seed_dir)
 
 
+def _schema_outdated() -> bool:
+    """Таблица есть, но в ней не хватает колонок из моделей: БД создана старой версией кода."""
+    inspector = inspect(engine)
+    for table in SQLModel.metadata.sorted_tables:
+        if inspector.has_table(table.name):
+            existing = {column["name"] for column in inspector.get_columns(table.name)}
+            if not {column.name for column in table.columns} <= existing:
+                return True
+    return False
+
+
 def ensure_seeded() -> None:
+    if _schema_outdated():
+        logger.warning("Схема БД устарела — пересоздаю её из seed")
+        reset_and_seed()
+        return
     create_tables()
     with Session(engine) as session:
         if session.exec(select(Business)).first() is None:

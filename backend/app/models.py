@@ -36,6 +36,7 @@ class Task(SQLModel, table=True):
     score: int = 0
     potential_score: int = 0
     level: str = "draft"
+    ai_meta: dict[str, Any] | None = Field(default=None, sa_column=Column(JSON, nullable=True))
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
     published_at: datetime | None = None

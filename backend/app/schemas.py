@@ -3,11 +3,14 @@
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
+from pydantic import BaseModel, ConfigDict, Field, PlainSerializer, field_validator
 
 from app.ai.service import ProviderStatus
-from app.domain.fields import CriterionKey, FieldKey
-from app.domain.rating import Level
+from app.domain.fields import TOPIC_KEYS, CriterionKey, FieldKey, LevelKey
+from app.domain.rating import Level, Rating
+
+TaskStatus = Literal["clarifying", "review", "published"]
+FieldStatus = Literal["empty", "suggested", "confirmed"]
 
 
 def _utc_iso(moment: datetime) -> str:
@@ -87,3 +90,124 @@ class Meta(BaseModel):
     criteria: list[CriterionMeta]
     levels: list[Level]
     topics: list[TopicMeta]
+
+
+class EvidenceDTO(BaseModel):
+    source: str
+    quote: str
+
+
+class CardFieldDTO(BaseModel):
+    value: str | None
+    status: FieldStatus
+    source: Literal["ai", "user"] | None
+    evidence: list[EvidenceDTO]
+    updated_at: str | None
+
+
+class CardDTO(BaseModel):
+    title: CardFieldDTO
+    context: CardFieldDTO
+    need: CardFieldDTO
+    users: CardFieldDTO
+    data: CardFieldDTO
+    constraints: CardFieldDTO
+    expected_result: CardFieldDTO
+    success_criteria: CardFieldDTO
+    contact: CardFieldDTO
+    interaction_format: CardFieldDTO
+
+
+class QuestionDTO(BaseModel):
+    id: str
+    field: FieldKey
+    question: str
+    why: str
+    points_gain: int
+    answer: str | None
+    round: int
+
+
+class AiMeta(BaseModel):
+    provider_used: str
+    model: str
+    degraded: bool
+    trace_ids: list[int]
+
+
+class BusinessRef(BaseModel):
+    id: int
+    name: str
+
+
+class TaskDetail(BaseModel):
+    id: int
+    business: BusinessRef
+    status: TaskStatus
+    topic: str | None
+    draft_text: str
+    card: CardDTO
+    questions: list[QuestionDTO]
+    rating: Rating
+    catalog_position: int | None
+    catalog_position_preview: int
+    proposals_count: int
+    ai: AiMeta | None
+    created_at: UtcDatetime
+    updated_at: UtcDatetime
+    published_at: UtcDatetime | None
+
+
+class TaskSummary(BaseModel):
+    id: int
+    title: str | None
+    status: TaskStatus
+    topic: str | None
+    score: int
+    level: Level
+    proposals_count: int
+    updated_at: UtcDatetime
+
+
+class ScoreEventOut(OrmModel):
+    score: int
+    delta: int
+    level: LevelKey
+    reason: str
+    created_at: UtcDatetime
+
+
+class TaskCreate(BaseModel):
+    business_id: int
+    draft_text: str = Field(min_length=10, max_length=4000)
+    topic: str | None = None
+
+    @field_validator("topic")
+    @classmethod
+    def _known_topic(cls, value: str | None) -> str | None:
+        if value is not None and value not in TOPIC_KEYS:
+            raise ValueError(f"Неизвестная тема: {value}")
+        return value
+
+
+class AnswerIn(BaseModel):
+    question_id: str = Field(min_length=1, max_length=20)
+    text: str = Field(default="", max_length=2000)
+
+
+class AnswersIn(BaseModel):
+    answers: list[AnswerIn] = Field(min_length=1, max_length=20)
+
+
+class FieldPatch(BaseModel):
+    value: str | None = Field(default=None, max_length=2000)
+    confirm: bool = False
+    reject: bool = False
+
+
+class CardPatch(BaseModel):
+    fields: dict[FieldKey, FieldPatch] = Field(min_length=1)
+
+
+class PublishIn(BaseModel):
+    confirm: bool = False

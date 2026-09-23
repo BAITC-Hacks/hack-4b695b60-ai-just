@@ -40,7 +40,7 @@ interface Question {
   field: FieldKey;
   question: string;
   why: string;             // зачем спрашиваем, одна строка
-  points_gain: number;     // сколько баллов может дать ответ
+  points_gain: number;     // сколько баллов может дать ответ; считается по текущей карточке
   answer: string | null;
   round: number;           // 1 — первичные вопросы, 2+ — дополнительные
 }
@@ -175,6 +175,7 @@ interface AiTrace {
 | Код | HTTP | Когда |
 | --- | :-: | --- |
 | `TASK_NOT_FOUND`, `TEAM_NOT_FOUND`, `BUSINESS_NOT_FOUND`, `PROPOSAL_NOT_FOUND`, `MILESTONE_NOT_FOUND` | 404 | Нет сущности |
+| `QUESTION_NOT_FOUND` | 404 | В ответах передан `question_id`, которого нет у этой задачи |
 | `NOT_TASK_OWNER` | 403 | `business_id` не владелец задачи (просмотр откликов, решение, этапы) |
 | `CONFIRMATION_REQUIRED` | 400 | Публикация без `confirm: true` |
 | `TITLE_REQUIRED` | 409 | Публикация без подтверждённого названия |
