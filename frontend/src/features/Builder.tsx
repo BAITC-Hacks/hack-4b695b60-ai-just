@@ -1,0 +1,620 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  CheckCheck,
+  CircleHelp,
+  FileText,
+  Send,
+  Sparkles,
+  WandSparkles,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { api, USE_MOCKS } from "@/api/client";
+import type { CardField, FieldKey, TaskDetail } from "@/api/types";
+import { useSession } from "@/lib/session";
+import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
+import { ErrorState, Loading, PageHeading } from "@/components/shared";
+import { RatingPanel } from "@/components/RatingPanel";
+import { Inspector } from "./Inspector";
+const example =
+  "Хотим чат-бота для клиентов, чтобы меньше звонили в колл-центр.";
+export function Builder() {
+  const { id } = useParams();
+  const { role, businessId } = useSession();
+  const query = useQuery({
+    queryKey: ["task", Number(id)],
+    queryFn: () => api.task(Number(id)),
+    enabled: !!id,
+  });
+  if (role !== "business")
+    return (
+      <div className="panel">
+        <h2>Конструктор доступен бизнесу</h2>
+        <p>Переключите роль в шапке, чтобы создать задачу.</p>
+        <Link to="/catalog">Перейти в каталог</Link>
+      </div>
+    );
+  if (!id) return <Draft key={businessId} />;
+  if (query.isPending) return <Loading />;
+  if (query.isError)
+    return (
+      <ErrorState error={query.error} retry={() => void query.refetch()} />
+    );
+  if (query.data.business.id !== businessId)
+    return (
+      <div className="panel">
+        <h2>Задача другого бизнеса</h2>
+        <p>Выберите «{query.data.business.name}» в шапке для редактирования.</p>
+      </div>
+    );
+  return <Editor key={id} task={query.data} />;
+}
+function Steps({ step }: { step: number }) {
+  return (
+    <ol className="steps">
+      {["Черновик", "Уточнение", "Карточка", "Публикация"].map((label, i) => (
+        <li
+          className={i === step ? "current" : i < step ? "complete" : ""}
+          key={label}
+        >
+          <span>{i < step ? <Check size={15} /> : `0${i + 1}`}</span>
+          {label}
+        </li>
+      ))}
+    </ol>
+  );
+}
+function Draft() {
+  const { businessId, meta } = useSession();
+  const navigate = useNavigate();
+  const [draft, setDraft] = useState("");
+  const [topic, setTopic] = useState("");
+  const create = useMutation({
+    mutationFn: () => api.create(businessId, draft.trim(), topic),
+    onSuccess: (t) => navigate(`/builder/${t.id}`),
+  });
+  return (
+    <>
+      <PageHeading
+        eyebrow="ОТ ИДЕИ К РЕШЕНИЮ"
+        title="Дайте вашей задаче начало"
+      >
+        Расскажите о проблеме. AI поможет превратить её в понятный вызов для
+        команды.
+      </PageHeading>
+      <Steps step={0} />
+      <div className="builder-layout">
+        <div>
+          <form
+            className="panel draft-panel"
+            onSubmit={(e) => {
+              e.preventDefault();
+              create.mutate();
+            }}
+          >
+            <div className="section-icon">
+              <FileText size={23} />
+            </div>
+            <h2>Что вы хотите решить?</h2>
+            <p className="muted">
+              Начните с пары предложений. Необязательно знать все ответы сразу.
+            </p>
+            <label htmlFor="draft">Описание задачи</label>
+            <textarea
+              id="draft"
+              className="draft-input"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={example}
+              minLength={10}
+              maxLength={4000}
+              required
+              disabled={create.isPending}
+            />
+            <div className="row between">
+              <button
+                type="button"
+                className="text-link"
+                onClick={() => setDraft(example)}
+                disabled={create.isPending}
+              >
+                <Sparkles size={14} />
+                Попробовать пример
+              </button>
+              <small className="muted">{draft.length} / 4000</small>
+            </div>
+            <label htmlFor="topic">Тема задачи</label>
+            <select
+              id="topic"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              disabled={create.isPending}
+            >
+              <option value="">Выберите тему · необязательно</option>
+              {meta.topics.map((t) => (
+                <option key={t.key} value={t.key}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+            <div className="draft-footer">
+              <span className="muted">
+                <CircleHelp size={15} /> Обычно занимает пару минут
+              </span>
+              <Button
+                type="submit"
+                disabled={create.isPending || draft.trim().length < 10}
+              >
+                <WandSparkles size={17} />
+                {create.isPending ? "Анализируем…" : "Проанализировать"}
+                <ArrowRight size={16} />
+              </Button>
+            </div>
+            {create.isPending && <Loading label="AI читает черновик…" />}
+            {create.isError && <ErrorState error={create.error} />}
+          </form>
+          <div className="trust-note">
+            <CheckCheck size={17} />
+            <span>
+              Вы управляете результатом. AI предлагает — вы проверяете и
+              подтверждаете.
+            </span>
+          </div>
+        </div>
+        <aside className="intro-panel">
+          <span className="eyebrow">КАК ЭТО РАБОТАЕТ</span>
+          <h2>
+            Одна идея.
+            <br />
+            Больше возможностей.
+          </h2>
+          <div className="intro-orbit">
+            <div className="orbit-ring" />
+            <div className="orbit-center">
+              <Sparkles size={34} />
+            </div>
+            <span className="orbit-tag tag-one">Понятная задача</span>
+            <span className="orbit-tag tag-two">Сильная команда</span>
+            <span className="orbit-dot" />
+          </div>
+          {[
+            [
+              "01",
+              "Опишите проблему",
+              "Свободным текстом, как рассказали бы коллеге.",
+            ],
+            ["02", "Уточните с AI", "Ответьте на вопросы и подтвердите факты."],
+            [
+              "03",
+              "Найдите команду",
+              "Опубликуйте задачу и выбирайте из откликов.",
+            ],
+          ].map(([n, h, p]) => (
+            <div className="intro-step" key={n}>
+              <span>{n}</span>
+              <div>
+                <b>{h}</b>
+                <p>{p}</p>
+              </div>
+            </div>
+          ))}
+          <div className="intro-bottom">
+            Хорошие решения начинаются
+            <br />с хороших вопросов.
+          </div>
+        </aside>
+      </div>
+    </>
+  );
+}
+function FieldEditor({
+  fieldKey,
+  field,
+  label,
+  placeholder,
+  busy,
+  patch,
+}: {
+  fieldKey: FieldKey;
+  field: CardField;
+  label: string;
+  placeholder: string;
+  busy: boolean;
+  patch: (
+    key: FieldKey,
+    change: { value?: string; confirm?: boolean; reject?: boolean },
+  ) => Promise<unknown>;
+}) {
+  const [value, setValue] = useState(field.value || "");
+  const dirty = value !== (field.value || "");
+  return (
+    <section className={`field-card field-${field.status}`}>
+      <div className="row between">
+        <label htmlFor={`field-${fieldKey}`}>{label}</label>
+        <span className={`badge status-${field.status}`}>
+          {field.status === "confirmed"
+            ? "Подтверждено"
+            : field.status === "suggested"
+              ? "Предложено AI"
+              : "Пусто"}
+        </span>
+      </div>
+      <textarea
+        id={`field-${fieldKey}`}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        maxLength={4000}
+        rows={fieldKey === "title" ? 2 : 3}
+        disabled={busy}
+      />
+      {field.status === "suggested" && (
+        <details className="evidence">
+          <summary>
+            На основании вашего текста · {field.evidence.length} цитат
+          </summary>
+          {field.evidence.map((e, i) => (
+            <blockquote key={i}>
+              «{e.quote}»<cite>Источник: {e.source}</cite>
+            </blockquote>
+          ))}
+        </details>
+      )}
+      <div className="row field-actions">
+        {dirty && (
+          <>
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={() =>
+                void patch(fieldKey, { value }).catch(() => undefined)
+              }
+            >
+              Сохранить
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setValue(field.value || "")}
+            >
+              Отменить
+            </Button>
+          </>
+        )}
+        {field.status === "suggested" && !dirty && (
+          <>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={() =>
+                void patch(fieldKey, { confirm: true }).catch(() => undefined)
+              }
+            >
+              <Check size={14} />
+              Подтвердить
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() =>
+                void patch(fieldKey, { reject: true }).catch(() => undefined)
+              }
+            >
+              <X size={14} />
+              Отклонить
+            </Button>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+function Editor({ task }: { task: TaskDetail }) {
+  const { meta } = useSession();
+  const cache = useQueryClient();
+  const [view, setView] = useState<"questions" | "card">(
+    task.status === "clarifying" ? "questions" : "card",
+  );
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [publishing, setPublishing] = useState(false);
+  const [checked, setChecked] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [inspector, setInspector] = useState(false);
+  const mutation = useMutation({
+    mutationFn: (action: () => Promise<TaskDetail>) => action(),
+    onSuccess: (t) => {
+      cache.setQueryData(["task", t.id], t);
+      void cache.invalidateQueries({
+        predicate: (q) => q.queryKey[0] !== "task",
+      });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const act = (action: () => Promise<TaskDetail>) =>
+    mutation.mutateAsync(action);
+  const patch = (
+    field: FieldKey,
+    change: { value?: string; confirm?: boolean; reject?: boolean },
+  ) => act(() => api.patch(task.id, { [field]: change }));
+  const confirm = () => {
+    void act(() => api.confirm(task.id)).catch(() => undefined);
+  };
+  const round = Math.max(1, ...task.questions.map((q) => q.round));
+  const questions = task.questions.filter((q) => q.round === round);
+  const focus = (field: FieldKey) => {
+    setView("card");
+    window.setTimeout(() => {
+      const el = document.getElementById(`field-${field}`);
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus();
+    }, 80);
+  };
+  return (
+    <>
+      <PageHeading
+        eyebrow={`ЗАДАЧА #${task.id} · ${task.business.name}`}
+        title={
+          success
+            ? "Задача опубликована!"
+            : view === "questions"
+              ? "Уточним самое важное"
+              : "Сделаем задачу понятной"
+        }
+        action={
+          <Button variant="secondary" onClick={() => setInspector(true)}>
+            <CircleHelp size={16} />
+            Как это работает
+          </Button>
+        }
+      >
+        {success
+          ? `Место в каталоге — №${task.catalog_position}. Команды уже могут откликаться.`
+          : "Каждый подтверждённый факт делает задачу ближе к решению."}
+      </PageHeading>
+      <Steps
+        step={
+          success || task.status === "published"
+            ? 3
+            : view === "questions"
+              ? 1
+              : 2
+        }
+      />
+      {success && (
+        <div className="success-banner">
+          <CheckCheck size={23} />
+          <span>
+            Готово! {task.rating.level.label} · {task.rating.score} баллов
+          </span>
+          <Button asChild>
+            <Link to={`/catalog/${task.id}`}>
+              Открыть в каталоге
+              <ArrowRight size={16} />
+            </Link>
+          </Button>
+        </div>
+      )}
+      <div className="builder-layout">
+        <div>
+          {view === "questions" ? (
+            <>
+              <form
+                className="panel"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void act(() =>
+                    api.answers(
+                      task.id,
+                      questions.map((q) => ({
+                        question_id: q.id,
+                        text: (answers[q.id] ?? q.answer ?? "").trim(),
+                      })),
+                    ),
+                  )
+                    .then(() => setView("card"))
+                    .catch(() => undefined);
+                }}
+              >
+                <div className="row between">
+                  <h2>Несколько вопросов от AI</h2>
+                  <span className="badge purple">Раунд {round}</span>
+                </div>
+                <p className="muted">
+                  Можно пропустить вопрос и вернуться к нему позже.
+                </p>
+                {questions.map((q, i) => (
+                  <div className="question" key={q.id}>
+                    <div className="row between">
+                      <span className="topic">
+                        {meta.fields.find((f) => f.key === q.field)?.label}
+                      </span>
+                      <span className="gain">+{q.points_gain} баллов</span>
+                    </div>
+                    <label htmlFor={q.id}>
+                      {i + 1}. {q.question}
+                    </label>
+                    <p className="muted">{q.why}</p>
+                    <textarea
+                      id={q.id}
+                      value={answers[q.id] ?? q.answer ?? ""}
+                      onChange={(e) =>
+                        setAnswers({ ...answers, [q.id]: e.target.value })
+                      }
+                      maxLength={2000}
+                      placeholder="Ваш ответ…"
+                      rows={3}
+                      disabled={mutation.isPending}
+                    />
+                  </div>
+                ))}
+                <div className="row between">
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    onClick={() => setView("card")}
+                  >
+                    Перейти к полям
+                  </Button>
+                  <Button disabled={mutation.isPending} type="submit">
+                    {mutation.isPending ? "Собираем…" : "Собрать карточку"}
+                    <ArrowRight size={16} />
+                  </Button>
+                </div>
+              </form>
+              <div className="panel discovered">
+                <h3>
+                  <Sparkles size={18} />
+                  AI нашёл в тексте
+                </h3>
+                {meta.fields
+                  .filter((f) => task.card[f.key].status === "suggested")
+                  .map((f) => (
+                    <FieldEditor
+                      key={`${f.key}-${task.card[f.key].value}-${task.card[f.key].status}`}
+                      fieldKey={f.key}
+                      field={task.card[f.key]}
+                      label={f.label}
+                      placeholder={f.placeholder}
+                      busy={mutation.isPending}
+                      patch={patch}
+                    />
+                  ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="row between editor-toolbar">
+                <span className="muted">
+                  {
+                    Object.values(task.card).filter(
+                      (f) => f.status === "confirmed",
+                    ).length
+                  }{" "}
+                  из {meta.fields.length} полей подтверждено
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={mutation.isPending}
+                  onClick={() =>
+                    void act(() => api.clarify(task.id))
+                      .then(() => setView("questions"))
+                      .catch(() => undefined)
+                  }
+                >
+                  <Sparkles size={15} />
+                  Задать ещё вопросы
+                </Button>
+              </div>
+              {meta.fields.map((f) => (
+                <FieldEditor
+                  key={`${f.key}-${task.card[f.key].value}-${task.card[f.key].status}`}
+                  fieldKey={f.key}
+                  field={task.card[f.key]}
+                  label={f.label}
+                  placeholder={f.placeholder}
+                  busy={mutation.isPending}
+                  patch={patch}
+                />
+              ))}
+              <div className="publish-bar">
+                <Button variant="ghost" onClick={() => setView("questions")}>
+                  <ArrowLeft size={16} />К вопросам
+                </Button>
+                {task.status === "published" ? (
+                  <Button asChild>
+                    <Link to={`/catalog/${task.id}`}>Открыть публикацию</Link>
+                  </Button>
+                ) : (
+                  <Button
+                    disabled={mutation.isPending}
+                    onClick={() => {
+                      setChecked(false);
+                      setPublishing(true);
+                    }}
+                  >
+                    <Send size={16} />
+                    Опубликовать задачу
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+          {mutation.isError && <ErrorState error={mutation.error} />}
+        </div>
+        <RatingPanel
+          rating={task.rating}
+          taskId={task.id}
+          position={task.catalog_position ?? task.catalog_position_preview}
+          onConfirm={confirm}
+          onFocus={focus}
+          busy={mutation.isPending}
+        />
+      </div>
+      <Dialog
+        open={publishing}
+        onOpenChange={setPublishing}
+        title="Готовы показать задачу командам?"
+        description="В публичной карточке будут только подтверждённые вами факты."
+      >
+        <p className="warning">
+          {
+            Object.values(task.card).filter((f) => f.status !== "confirmed")
+              .length
+          }{" "}
+          полей не подтверждены и не попадут в карточку.
+        </p>
+        {task.card.title.status !== "confirmed" && (
+          <p className="error-text">Сначала подтвердите название задачи.</p>
+        )}
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => setChecked(e.target.checked)}
+          />
+          Я проверил карточку
+        </label>
+        <Button
+          disabled={
+            !checked ||
+            mutation.isPending ||
+            task.card.title.status !== "confirmed"
+          }
+          onClick={() =>
+            void act(() => api.publish(task.id))
+              .then(() => {
+                setPublishing(false);
+                setSuccess(true);
+                toast.success("Задача опубликована");
+              })
+              .catch(() => undefined)
+          }
+        >
+          Опубликовать
+        </Button>
+        {mutation.isError && (
+          <p className="error-text">{mutation.error.message}</p>
+        )}
+        {USE_MOCKS && (
+          <p className="muted small">
+            Публикация в демонстрационном каталоге этого браузера.
+          </p>
+        )}
+      </Dialog>
+      <Inspector
+        taskId={task.id}
+        open={inspector}
+        onOpenChange={setInspector}
+      />
+    </>
+  );
+}
