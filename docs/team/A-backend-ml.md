@@ -32,7 +32,7 @@ git checkout -b feat/backend-core                # здесь работает C
 git worktree add ..\hakaton-ai -b feat/ai-ml main  # отдельная папка для Codex (A2)
 
 # .env создаёт A1 из .env.example; ключи вписываешь ты руками
-# OPENAI_API_KEY, NVIDIA_API_KEY, позже BREV_LLM_*
+# OPENAI_API_KEY, позже BREV_LLM_*
 ```
 
 Когда A1 закончит каркас (около T+0:20), закоммить его в `feat/backend-core` и влей в ветку Codex:
@@ -42,7 +42,7 @@ git add -A; git commit -m "feat(backend): каркас"      # в D:\projects\ha
 cd ..\hakaton-ai; git merge feat/backend-core          # теперь у Codex есть contracts.py и stub.py
 ```
 
-Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, раздел 3 (T+0:10, 5 минут), и забываешь до T+1:00.
+Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, раздел 1 (T+0:10, 5 минут), и возвращаешься к нему после запуска модели.
 
 ## 2. Фазы и готовые промпты
 
@@ -69,7 +69,7 @@ Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, р
 ```text
 Прочитай AGENTS.md, docs/ai-ml.md и docs/nvidia-brev.md. Пока другой агент делает каркас backend, создай только независимые файлы, ничего больше в backend/ не трогай:
 1) backend/eval/dataset.jsonl — 12–15 синтетических черновиков бизнес-задач на русском по docs/ai-ml.md, раздел 10: разная полнота, разметка gold.present, 4 обязательные ловушки (prompt injection про бюджет, черновик без чисел, черновик из 1–3 слов, контакт в тексте). Компании вымышленные, email на example.com.
-2) infra/brev/serve_vllm.sh и infra/brev/serve_nim.sh по docs/nvidia-brev.md, раздел 3.4 (ключ из переменной окружения, не хардкодить).
+2) infra/brev/serve_vllm.sh по docs/nvidia-brev.md, раздел 2 (ключ из переменной окружения, не хардкодить).
 Не коммить без моей команды.
 ```
 
@@ -77,7 +77,7 @@ Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, р
 
 ```text
 Работай только в backend/app/ai/, backend/app/ml/, backend/app/api/ai.py, backend/app/api/recommendations.py, backend/eval/, infra/brev/ и backend/tests/test_ai_*.py.
-Сделай backend/app/ai/router.py и providers/ (openai, nvidia, brev, stub) по docs/ai-ml.md, разделы 2–3: цепочка AI_PROVIDER_CHAIN, таймаут, один repair, circuit breaker на 60 с, финальная заглушка. Провайдер без ключа или URL недоступен. Сигнатуры AIService из contracts.py не меняй.
+Сделай backend/app/ai/router.py и providers/ (openai, brev, stub) по docs/ai-ml.md, разделы 2–3: цепочка AI_PROVIDER_CHAIN, таймаут, один repair, circuit breaker на 60 с, финальная заглушка. Провайдер без ключа или URL недоступен. Сигнатуры AIService из contracts.py не меняй.
 Готово, когда: с AI_PROVIDER=stub без сети analyze_draft отдаёт не меньше 3 вопросов, а с OPENAI_API_KEY отдаёт валидный DraftAnalysis. Не коммить без моей команды.
 ```
 
@@ -96,7 +96,7 @@ Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, р
 **A2 — Codex:**
 
 ```text
-Шаг 2 по docs/ai-ml.md: prompts/analyze_draft.v1.md и build_card.v1.md (раздел 5), clarify.py и card_builder.py, grounding.py (раздел 6: цитаты с rapidfuzz, числа, email, URL и @handle), постобработка вопросов (не меньше 3, добор из question_bank, points_gain через domain.rating), trace.py (запись каждой попытки в ai_trace). Провайдер nvidia: base_url из NVIDIA_BASE_URL, отключи рассуждение через chat_template_kwargs.enable_thinking=false.
+Шаг 2 по docs/ai-ml.md: prompts/analyze_draft.v1.md и build_card.v1.md (раздел 5), clarify.py и card_builder.py, grounding.py (раздел 6: цитаты с rapidfuzz, числа, email, URL и @handle), постобработка вопросов (не меньше 3, добор из question_bank, points_gain через domain.rating), trace.py (запись каждой попытки в ai_trace). Для Brev используй BREV_LLM_BASE_URL; на Nemotron отключи рассуждение через chat_template_kwargs.enable_thinking=false.
 Тесты: невалидный JSON → repair → следующий провайдер → заглушка; выдуманное число отклоняется; меньше 3 вопросов → добор; confirmed-поля не возвращаются.
 ```
 
@@ -113,7 +113,7 @@ Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, р
 **A2 — Codex:**
 
 ```text
-Шаг 3 по docs/ai-ml.md: pii.py (маскирование и восстановление, раздел 6), ml/embeddings.py (цепочка nvidia → openai → tfidf, input_type passage и query для NVIDIA, кэш в памяти), ml/recommend.py (формула match, только score ≥ 40, reasons, раздел 9), GET /api/teams/{id}/recommendations, GET /api/ai/traces, GET /api/ai/prompts, GET и PUT /api/ai/provider — всё по docs/api-contract.md, разделы 3.5 и 3.7.
+Шаг 3 по docs/ai-ml.md: pii.py (маскирование и восстановление, раздел 6), ml/embeddings.py (цепочка openai → tfidf, кэш в памяти), ml/recommend.py (формула match, только score ≥ 40, reasons, раздел 9), GET /api/teams/{id}/recommendations, GET /api/ai/traces, GET /api/ai/prompts, GET и PUT /api/ai/provider — всё по docs/api-contract.md, разделы 3.5 и 3.7.
 ```
 
 **S2 (2:40):** слить и запушить. Черновик → публикация → каталог проходит через UI у B.
@@ -129,7 +129,7 @@ Brev-инстанс создаёшь руками по `docs/nvidia-brev.md`, р
 **A2 — Codex:**
 
 ```text
-Шаг 4 по docs/ai-ml.md, раздел 10: eval/run_eval.py на готовом backend/eval/dataset.jsonl с метриками из таблицы, отчёт eval/reports/latest.md и GET /api/ai/eval/latest. Прогони на stub, openai, nvidia. Если Brev поднят (docs/nvidia-brev.md), добавь провайдер brev и infra/brev/serve_vllm.sh и serve_nim.sh.
+Шаг 4 по docs/ai-ml.md, раздел 10: eval/run_eval.py на готовом backend/eval/dataset.jsonl с метриками из таблицы, отчёт eval/reports/latest.md и GET /api/ai/eval/latest. Прогони на stub, openai, brev. Если Brev поднят (docs/nvidia-brev.md), используй infra/brev/serve_vllm.sh.
 ```
 
 **S3 (3:40):** полный сценарий проходит в UI.
@@ -187,5 +187,5 @@ git status --short | Select-String -Pattern "\.env$|\.db$"         # и не г�
 1. **Формулу рейтинга:** 7 критериев, 18 проверок, баллы только за подтверждённое, уровни 40, 70, 90, пересчёт и `score_event`.
 2. **Почему AI не выдумывает:** цитаты, grounding (подстрока или fuzzy-сравнение от 90), проверка чисел и контактов, отклонённые поля в Inspector, метрика `grounding_reject_rate` в eval.
 3. **Некорректный ответ модели:** валидация, repair, следующий провайдер, заглушка; всё в `ai_trace`.
-4. **NVIDIA:** Nemotron 3 через Build API (OpenAI-совместимо, рассуждение выключено для JSON); эмбеддинги `nemotron-3-embed-1b`; своя модель на Brev через vLLM или NIM, port-forward; почему русский сначала идёт в OpenAI (Nemotron дообучали без русского, это видно по eval).
+4. **NVIDIA:** своя модель Nemotron 3 на Brev через vLLM и port-forward; почему первым в цепочке стоит OpenAI и как сравниваются модели по eval.
 5. **Почему нет автоназначения и как работают рекомендации:** только навыки и интересы, только задачи от 40 баллов, каталог не фильтруется.

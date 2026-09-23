@@ -22,8 +22,7 @@ flowchart LR
 
     subgraph PR["AI-провайдеры — цепочка с fallback"]
         OAI["OpenAI API: gpt-6-luna, text-embedding-3-small"]
-        NV["NVIDIA Build, hosted NIM: Nemotron 3, nemotron-3-embed-1b"]
-        BREV["NVIDIA Brev GPU: свой Nemotron через vLLM или NIM"]
+        BREV["NVIDIA Brev GPU: свой Nemotron через vLLM"]
         STUB["Офлайн: заглушка + TF-IDF"]
     end
 
@@ -33,10 +32,8 @@ flowchart LR
     API --> ML
     API --> DB
     AI --> OAI
-    AI --> NV
     AI --> BREV
     AI --> STUB
-    ML --> NV
     ML --> OAI
     ML --> STUB
 ```
@@ -53,7 +50,7 @@ flowchart LR
 | Слой | Технологии | Почему |
 | --- | --- | --- |
 | Backend | Python 3.11, FastAPI, Pydantic v2, pydantic-settings, SQLModel + SQLite, Uvicorn | Быстрый старт, автодокументация OpenAPI, строгая валидация |
-| AI-клиент | Python SDK `openai` | Одним клиентом ходим в OpenAI, NVIDIA Build и Brev (vLLM/NIM): все OpenAI-совместимы |
+| AI-клиент | Python SDK `openai` | Одним клиентом ходим в OpenAI и Brev (vLLM): оба OpenAI-совместимы |
 | ML | numpy, scikit-learn (TF-IDF), rapidfuzz | Рекомендации и grounding без тяжёлых зависимостей |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query, React Router, Recharts, motion, sonner | Готовый UI-кит, типы генерируются из OpenAPI |
 | Инфраструктура | Docker Compose; NVIDIA Brev (опционально) | Запуск для жюри одной командой |
@@ -232,9 +229,9 @@ SEED_ON_STARTUP=true
 CORS_ORIGINS=http://localhost:5173
 
 # --- Маршрутизация AI ---
-# auto — идти по AI_PROVIDER_CHAIN; openai | nvidia | brev | stub — принудительно один провайдер
+# auto — идти по AI_PROVIDER_CHAIN; openai | brev | stub — принудительно один провайдер
 AI_PROVIDER=auto
-AI_PROVIDER_CHAIN=openai,nvidia,brev,stub
+AI_PROVIDER_CHAIN=openai,brev,stub
 AI_TIMEOUT_SECONDS=25
 AI_MAX_REPAIR_ATTEMPTS=1
 AI_REDACT_PII=true
@@ -245,20 +242,14 @@ OPENAI_MODEL=gpt-6-luna
 OPENAI_REASONING_EFFORT=low
 OPENAI_EMBED_MODEL=text-embedding-3-small
 
-# --- NVIDIA Build (hosted NIM, OpenAI-совместимый) ---
-NVIDIA_API_KEY=
-NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
-NVIDIA_MODEL=nvidia/nemotron-3-nano-30b-a3b
-NVIDIA_EMBED_MODEL=nvidia/nemotron-3-embed-1b
-
-# --- NVIDIA Brev (своя модель: vLLM или NIM, OpenAI-совместимый) ---
+# --- NVIDIA Brev (своя модель: vLLM, OpenAI-совместимый) ---
 # Пусто = провайдер выключен. После brev port-forward: http://localhost:8001/v1
 BREV_LLM_BASE_URL=
 BREV_LLM_MODEL=nemotron-3-nano
 BREV_LLM_API_KEY=
 
 # --- Эмбеддинги ---
-EMBED_PROVIDER_CHAIN=nvidia,openai,tfidf
+EMBED_PROVIDER_CHAIN=openai,tfidf
 ```
 
 Провайдер без ключа или без доступного URL считается недоступным и пропускается. Так проект запускается у жюри вообще без ключей: работают заглушка и TF-IDF.

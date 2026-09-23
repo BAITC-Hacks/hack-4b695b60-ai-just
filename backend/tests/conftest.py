@@ -14,7 +14,6 @@ os.environ.update(
         "AI_PROVIDER_CHAIN": "stub",
         "EMBED_PROVIDER_CHAIN": "tfidf",
         "OPENAI_API_KEY": "",
-        "NVIDIA_API_KEY": "",
         "BREV_LLM_BASE_URL": "",
     }
 )

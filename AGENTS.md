@@ -54,7 +54,7 @@ uv sync                                           # установка
 uv run uvicorn app.main:app --reload --port 8000  # запуск, документация на http://localhost:8000/docs
 uv run pytest                                     # тесты
 uv run ruff check . --fix; uv run ruff format .   # линт и формат
-uv run python -m eval.run_eval --providers stub,openai,nvidia   # eval (зона A2)
+uv run python -m eval.run_eval --providers stub,openai,brev   # eval (зона A2)
 ```
 
 Без uv: `python -m venv .venv; .venv\Scripts\activate; pip install -e ".[dev]"`.

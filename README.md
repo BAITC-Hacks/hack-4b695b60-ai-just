@@ -42,7 +42,7 @@ flowchart LR
 | Backend: каталог с сортировкой по рейтингу, фильтрами и позицией | Готово, API |
 | Backend: отклики, ручной выбор бизнеса, этапы, лидерборды команд и заказчиков | Готово, API |
 | AI: офлайн-заглушка (правила и банк вопросов) | Готово |
-| AI: OpenAI и NVIDIA Nemotron, grounding-guard, маскирование PII, AI Inspector | В работе |
+| AI: OpenAI и Nemotron на Brev, grounding-guard, маскирование PII, AI Inspector | В работе |
 | Рекомендации, eval, своя модель на NVIDIA Brev | В работе |
 | Frontend | В работе |
 | Docker Compose (backend) | Готово |
@@ -77,11 +77,11 @@ flowchart LR
 
 - **Анализ черновика и сборка карточки** через structured output (JSON-схема и Pydantic), промпты с версиями.
 - **Защита от выдуманных фактов:** у каждого поля дословная цитата из текста пользователя. Код проверяет цитаты (fuzzy-сравнение), числа, email и ссылки и отбрасывает всё, чего нет в источнике.
-- **Цепочка провайдеров с fallback:** OpenAI `gpt-6-luna` → NVIDIA Build `nemotron-3-nano-30b-a3b` → своя модель на GPU NVIDIA Brev (vLLM или NIM) → офлайн-заглушка. Некорректный JSON получает один repair, дальше следующий провайдер. Сценарий работает даже без интернета.
+- **Цепочка провайдеров с fallback:** OpenAI `gpt-6-luna` → своя модель на GPU NVIDIA Brev (vLLM) → офлайн-заглушка. Некорректный JSON получает один repair, дальше следующий провайдер. Сценарий работает даже без интернета.
 - **AI Inspector:** промпт, схема, сырой ответ, ошибки валидации, отклонённые поля и провайдер по каждому вызову.
 - **Маскирование PII** (email, телефоны, @-ники) перед внешним API.
-- **Рекомендации задач командам:** эмбеддинги NVIDIA `nemotron-3-embed-1b` (запасные — OpenAI и TF-IDF) плюс совпадение навыков, с объяснением причин.
-- **Eval-стенд:** размеченные черновики с ловушками (prompt injection, «нет чисел»), метрики `field_f1`, `grounding_reject_rate`, `questions_ok_rate`, задержка и стоимость; сравнение OpenAI, NVIDIA, Brev и заглушки.
+- **Рекомендации задач командам:** эмбеддинги OpenAI с fallback на TF-IDF плюс совпадение навыков, с объяснением причин.
+- **Eval-стенд:** размеченные черновики с ловушками (prompt injection, «нет чисел»), метрики `field_f1`, `grounding_reject_rate`, `questions_ok_rate`, задержка и стоимость; сравнение OpenAI, Brev и заглушки.
 
 Подробно: [docs/ai-ml.md](docs/ai-ml.md), [docs/nvidia-brev.md](docs/nvidia-brev.md).
 
@@ -94,7 +94,6 @@ flowchart LR
     BE --> DB[("SQLite")]
     BE --> AI["AI-роутер"]
     AI --> OAI["OpenAI"]
-    AI --> NV["NVIDIA Build"]
     AI --> BR["NVIDIA Brev GPU"]
     AI --> ST["Офлайн-заглушка"]
 ```
@@ -102,7 +101,7 @@ flowchart LR
 | Слой | Технологии |
 | --- | --- |
 | Backend | Python 3.11, FastAPI, Pydantic v2, SQLModel + SQLite, uv |
-| AI и ML | OpenAI API (`gpt-6-luna`, `text-embedding-3-small`), NVIDIA Build (Nemotron 3, `nemotron-3-embed-1b`), NVIDIA Brev (vLLM или NIM), numpy, scikit-learn, rapidfuzz |
+| AI и ML | OpenAI API (`gpt-6-luna`, `text-embedding-3-small`), NVIDIA Brev (Nemotron 3 через vLLM), numpy, scikit-learn, rapidfuzz |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS v4, shadcn/ui, TanStack Query, Recharts, motion |
 | Инфраструктура | Docker Compose |
 
@@ -115,7 +114,7 @@ flowchart LR
 ```powershell
 git clone https://github.com/BAITC-Hacks/hack-4b695b60-ai-just.git
 cd hack-4b695b60-ai-just
-copy .env.example .env          # по желанию: OPENAI_API_KEY, NVIDIA_API_KEY, BREV_LLM_*
+copy .env.example .env          # по желанию: OPENAI_API_KEY, BREV_LLM_*
 
 # вариант 1: Docker
 docker compose up --build       # API и документация: http://localhost:8000/docs
@@ -149,7 +148,7 @@ Frontend (`frontend/`, `npm install; npm run dev`, http://localhost:5173) поя
 ## Данные и интеграции
 
 - `data/seed/` — синтетические данные: 6 бизнесов, 6 черновиков, 6 карточек, 6 команд, 8 откликов. Компании и люди вымышлены, email на `example.com`.
-- Внешние сервисы (необязательны): OpenAI API, NVIDIA Build API, NVIDIA Brev. Ключи — только в `.env`, который не коммитится.
+- Внешние сервисы (необязательны): OpenAI API и NVIDIA Brev. Ключи — только в `.env`, который не коммитится.
 
 ## Ограничения
 
@@ -159,7 +158,7 @@ Frontend (`frontend/`, `npm install; npm run dev`, http://localhost:5173) поя
 - Свои модели не обучаем, используем готовые. Векторной БД нет, эмбеддинги хранятся в памяти.
 - Маскируются email, телефоны и @-ники. Имена людей не маскируются.
 - Nemotron 3 Nano дообучали без русского языка, поэтому по умолчанию первым в цепочке идёт OpenAI. Порядок подтверждаем метриками eval.
-- NVIDIA Build API требует SMS-верификации аккаунта, а для кода +7 (Казахстан) она недоступна. Поэтому модели NVIDIA мы запускаем на своём GPU в NVIDIA Brev. Провайдер Build API в коде есть и включится, как только появится ключ.
+- NVIDIA Build API не используется. Модель Nemotron запускается на своём GPU в NVIDIA Brev.
 
 Развёрнутой версии пока нет, запуск локальный.
 

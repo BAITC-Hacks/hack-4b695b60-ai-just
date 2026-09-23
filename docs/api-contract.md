@@ -22,7 +22,7 @@ type LevelKey = "draft" | "working" | "ready" | "priority";
 type TaskStatus = "clarifying" | "review" | "published";
 type FieldStatus = "empty" | "suggested" | "confirmed";
 type ProposalStatus = "submitted" | "selected" | "rejected";
-type ProviderName = "openai" | "nvidia" | "brev" | "stub";
+type ProviderName = "openai" | "brev" | "stub";
 
 interface Evidence { source: string; quote: string }   // source: "draft" | "answer:q1" | ...
 
@@ -259,7 +259,7 @@ interface CardPatch {
 | --- | --- | --- |
 | GET | `/api/teams/{team_id}/recommendations?limit=5` | `{items: Recommendation[], method: string, note: string}` |
 
-Сюда попадают только опубликованные задачи со `score ≥ 40`. `method` — например `"embeddings:nvidia/nemotron-3-embed-1b"` или `"tfidf"`. `note` всегда `"Рекомендации не ограничивают каталог: все задачи доступны во вкладке «Каталог»"`.
+Сюда попадают только опубликованные задачи со `score ≥ 40`. `method` — например `"embeddings:text-embedding-3-small"` или `"tfidf"`. `note` всегда `"Рекомендации не ограничивают каталог: все задачи доступны во вкладке «Каталог»"`.
 
 ### 3.6 Отклики, решения, этапы
 

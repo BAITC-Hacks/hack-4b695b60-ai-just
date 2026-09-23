@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
 
     ai_provider: str = "auto"
-    ai_provider_chain: str = "openai,nvidia,brev,stub"
+    ai_provider_chain: str = "openai,brev,stub"
     ai_timeout_seconds: float = 25.0
     ai_max_repair_attempts: int = 1
     ai_redact_pii: bool = True
@@ -38,16 +38,11 @@ class Settings(BaseSettings):
     openai_reasoning_effort: str = "low"
     openai_embed_model: str = "text-embedding-3-small"
 
-    nvidia_api_key: str = ""
-    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
-    nvidia_model: str = "nvidia/nemotron-3-nano-30b-a3b"
-    nvidia_embed_model: str = "nvidia/nemotron-3-embed-1b"
-
     brev_llm_base_url: str = ""
     brev_llm_model: str = "nemotron-3-nano"
     brev_llm_api_key: str = ""
 
-    embed_provider_chain: str = "nvidia,openai,tfidf"
+    embed_provider_chain: str = "openai,tfidf"
 
     @field_validator("database_url")
     @classmethod

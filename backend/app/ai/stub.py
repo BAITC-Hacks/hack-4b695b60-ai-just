@@ -14,6 +14,7 @@ from app.ai.contracts import (
     FieldSuggestion,
     QAPair,
 )
+from app.ai.grounding import factual_text
 from app.ai.question_bank import select_questions
 from app.config import get_settings
 from app.domain.fields import SCORED_FIELD_KEYS, TOPIC_KEYS, FieldKey
@@ -124,7 +125,7 @@ _TOPIC_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
 
 
 def _sentences(text: str) -> list[str]:
-    return [part.strip() for part in _SENTENCE_SPLIT_RE.split(text) if part and part.strip()]
+    return [part.strip() for part in _SENTENCE_SPLIT_RE.split(factual_text(text)) if part and part.strip()]
 
 
 def _clauses(text: str) -> list[str]:
@@ -197,7 +198,7 @@ def _contacts(text: str, source: str) -> FieldSuggestion | None:
 
 
 def _detect_topic(text: str) -> str | None:
-    normalized = normalize(text)
+    normalized = normalize(factual_text(text))
     scores = {topic: len(pattern.findall(normalized)) for topic, pattern in _TOPIC_RULES}
     topic, hits = max(scores.items(), key=lambda item: item[1])
     return topic if hits else None

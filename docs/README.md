@@ -7,7 +7,7 @@
 | [api-contract.md](api-contract.md) | Типы и эндпоинты: договор между backend и frontend | Обоим |
 | [rating-and-gamification.md](rating-and-gamification.md) | Формула рейтинга (18 проверок), уровни, правила каталога и рекомендаций, механики геймификации | Обоим |
 | [ai-ml.md](ai-ml.md) | Провайдеры и модели, промпты, контракты, grounding, заглушка, рекомендации, eval | A |
-| [nvidia-brev.md](nvidia-brev.md) | NVIDIA Build API и своя модель на GPU NVIDIA Brev: пошагово | A |
+| [nvidia-brev.md](nvidia-brev.md) | Своя модель на GPU NVIDIA Brev: пошагово | A |
 | [plan-5h.md](plan-5h.md) | Таймлайн двух дорожек, синхронизации, git-процесс, cut-list, риски | Обоим |
 | [demo-script.md](demo-script.md) | Сценарий демо на 5 минут, готовые тексты, запасные планы, ответы жюри | Обоим, B ведёт |
 | [team/A-backend-ml.md](team/A-backend-ml.md) | Роль A: backend и ML через Cursor и Codex, промпты по фазам | A |
